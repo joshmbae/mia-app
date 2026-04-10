@@ -2,6 +2,7 @@
   "expo": {
     "name": "mia-app",
     "slug": "mia-app",
+    "scheme": "mia-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -21,10 +22,36 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mia möchte auf deine Fotos zugreifen, um ein Profilbild hinzuzufügen.",
+          "cameraPermission": "Mia möchte die Kamera nutzen, um ein Profilfoto aufzunehmen."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "06814cfd-c746-4f12-af01-777dcd868212"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/06814cfd-c746-4f12-af01-777dcd868212"
     }
   }
 }

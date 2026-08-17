@@ -1,45 +1,156 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabase";
 import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, ChatSession, Memory, WeightLog, FeedingLog, SleepLog, MilestoneProgress } from "../types";
 
-const PROFILES_KEY = "mia_profiles";
-const PARENT_PROFILES_KEY = "mia_parent_profiles";
+// ─── Generic reconcile helper ─────────────────────────────────────────────────
+// Row-Level-Security already scopes every query to the logged-in user, so these
+// functions only need to reconcile a table (or a baby/session-scoped slice of a
+// table) against the full array the caller wants to persist: upsert what's given,
+// delete whatever existing row isn't in that array anymore.
+
+async function reconcile(
+  table: string,
+  scope: [string, string] | null,
+  idColumn: string,
+  ids: string[],
+  rows: Record<string, unknown>[]
+): Promise<void> {
+  let selectQuery = supabase.from(table).select(idColumn);
+  if (scope) selectQuery = selectQuery.eq(scope[0], scope[1]);
+  const { data: existing, error: selErr } = await selectQuery;
+  if (selErr) throw selErr;
+
+  const existingIds = new Set((existing ?? []).map((r: any) => r[idColumn] as string));
+  const idSet = new Set(ids);
+  const toDelete = [...existingIds].filter((existingId) => !idSet.has(existingId));
+
+  if (toDelete.length > 0) {
+    let delQuery = supabase.from(table).delete();
+    if (scope) delQuery = delQuery.eq(scope[0], scope[1]);
+    const { error } = await delQuery.in(idColumn, toDelete);
+    if (error) throw error;
+  }
+
+  if (rows.length > 0) {
+    const { error } = await supabase.from(table).upsert(rows);
+    if (error) throw error;
+  }
+}
 
 // ─── Baby Profiles ────────────────────────────────────────────────────────────
 
+function babyProfileToRow(p: BabyProfile) {
+  return {
+    id: p.id,
+    name: p.name,
+    birth_date: p.birthDate,
+    due_date: p.dueDate ?? null,
+    gender: p.gender ?? null,
+    feeding_type: p.feedingType,
+    avatar_color: p.avatarColor,
+    created_at: p.createdAt,
+    photo_uri: p.photoUri ?? null,
+    weight_grams: p.weightGrams ?? null,
+    premature: p.premature ?? null,
+    siblings: p.siblings ?? null,
+    medical_notes: p.medicalNotes ?? null,
+    description: p.description ?? null,
+  };
+}
+
+function rowToBabyProfile(r: any): BabyProfile {
+  return {
+    id: r.id,
+    name: r.name,
+    birthDate: r.birth_date,
+    dueDate: r.due_date ?? undefined,
+    gender: r.gender ?? undefined,
+    feedingType: r.feeding_type,
+    avatarColor: r.avatar_color,
+    createdAt: r.created_at,
+    photoUri: r.photo_uri ?? undefined,
+    weightGrams: r.weight_grams ?? undefined,
+    premature: r.premature ?? undefined,
+    siblings: r.siblings ?? undefined,
+    medicalNotes: r.medical_notes ?? undefined,
+    description: r.description ?? undefined,
+  };
+}
+
 export async function saveProfiles(profiles: BabyProfile[]): Promise<void> {
-  await AsyncStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  await reconcile("baby_profiles", null, "id", profiles.map((p) => p.id), profiles.map(babyProfileToRow));
 }
 
 export async function loadProfiles(): Promise<BabyProfile[]> {
-  const data = await AsyncStorage.getItem(PROFILES_KEY);
-  if (!data) return [];
-  return JSON.parse(data) as BabyProfile[];
+  const { data, error } = await supabase.from("baby_profiles").select("*");
+  if (error) throw error;
+  return (data ?? []).map(rowToBabyProfile);
 }
 
 // ─── Parent Profiles ──────────────────────────────────────────────────────────
 
+function parentProfileToRow(p: ParentProfile) {
+  return {
+    id: p.id,
+    name: p.name,
+    role: p.role,
+    created_at: p.createdAt,
+    description: p.description ?? null,
+  };
+}
+
+function rowToParentProfile(r: any): ParentProfile {
+  return {
+    id: r.id,
+    name: r.name,
+    role: r.role,
+    createdAt: r.created_at,
+    description: r.description ?? undefined,
+  };
+}
+
 export async function saveParentProfiles(profiles: ParentProfile[]): Promise<void> {
-  await AsyncStorage.setItem(PARENT_PROFILES_KEY, JSON.stringify(profiles));
+  await reconcile("parent_profiles", null, "id", profiles.map((p) => p.id), profiles.map(parentProfileToRow));
 }
 
 export async function loadParentProfiles(): Promise<ParentProfile[]> {
-  const data = await AsyncStorage.getItem(PARENT_PROFILES_KEY);
-  if (!data) return [];
-  return JSON.parse(data) as ParentProfile[];
+  const { data, error } = await supabase.from("parent_profiles").select("*");
+  if (error) throw error;
+  return (data ?? []).map(rowToParentProfile);
 }
 
 // ─── Pregnancy Profiles ───────────────────────────────────────────────────────
 
-const PREGNANCY_PROFILES_KEY = "mia_pregnancy_profiles";
+function pregnancyProfileToRow(p: PregnancyProfile) {
+  return {
+    id: p.id,
+    nickname: p.nickname,
+    due_date: p.dueDate,
+    avatar_color: p.avatarColor,
+    created_at: p.createdAt,
+    description: p.description ?? null,
+  };
+}
+
+function rowToPregnancyProfile(r: any): PregnancyProfile {
+  return {
+    id: r.id,
+    nickname: r.nickname,
+    dueDate: r.due_date,
+    avatarColor: r.avatar_color,
+    createdAt: r.created_at,
+    description: r.description ?? undefined,
+  };
+}
 
 export async function savePregnancyProfiles(profiles: PregnancyProfile[]): Promise<void> {
-  await AsyncStorage.setItem(PREGNANCY_PROFILES_KEY, JSON.stringify(profiles));
+  await reconcile("pregnancy_profiles", null, "id", profiles.map((p) => p.id), profiles.map(pregnancyProfileToRow));
 }
 
 export async function loadPregnancyProfiles(): Promise<PregnancyProfile[]> {
-  const data = await AsyncStorage.getItem(PREGNANCY_PROFILES_KEY);
-  if (!data) return [];
-  return JSON.parse(data) as PregnancyProfile[];
+  const { data, error } = await supabase.from("pregnancy_profiles").select("*");
+  if (error) throw error;
+  return (data ?? []).map(rowToPregnancyProfile);
 }
 
 export async function migratePregnancyToBaby(
@@ -56,17 +167,16 @@ export async function migratePregnancyToBaby(
   const babies = await loadProfiles();
   await saveProfiles([...babies, newBaby]);
 
-  // Migrate sessions: move to new baby ID, update babyId field
+  // Migrate sessions: move to new baby ID, update babyId field (in place, same session id)
   const sessions = await loadSessions(pregnancyId);
   const updatedSessions = sessions.map((s) => ({ ...s, babyId: newBaby.id }));
   await saveSessions(newBaby.id, updatedSessions);
-  await AsyncStorage.removeItem(`mia_sessions_${pregnancyId}`);
 
-  // Migrate memories: move to new baby ID, update babyId field
+  // Migrate memories: composite key includes baby_id, so old rows must be deleted explicitly
   const memories = await loadMemories(pregnancyId);
   const updatedMemories = memories.map((m) => ({ ...m, babyId: newBaby.id }));
   await saveMemories(newBaby.id, updatedMemories);
-  await AsyncStorage.removeItem(`mia_memories_${pregnancyId}`);
+  await supabase.from("memories").delete().eq("baby_id", pregnancyId);
 
   // Remove pregnancy profile (sessions/memories already moved, don't delete them)
   const pregnancies = await loadPregnancyProfiles();
@@ -79,21 +189,49 @@ export async function deletePregnancyProfile(id: string): Promise<void> {
   const profiles = await loadPregnancyProfiles();
   await savePregnancyProfiles(profiles.filter((p) => p.id !== id));
   const sessions = await loadSessions(id);
-  await Promise.all(sessions.map((s) => AsyncStorage.removeItem(`mia_messages_${s.id}`)));
-  await AsyncStorage.removeItem(`mia_sessions_${id}`);
-  await AsyncStorage.removeItem(`mia_memories_${id}`);
+  if (sessions.length > 0) {
+    await supabase.from("chat_messages").delete().in("session_id", sessions.map((s) => s.id));
+  }
+  await supabase.from("chat_sessions").delete().eq("baby_id", id);
+  await supabase.from("memories").delete().eq("baby_id", id);
 }
 
 // ─── Chat Sessions ────────────────────────────────────────────────────────────
 
+function chatSessionToRow(babyId: string, s: ChatSession) {
+  return {
+    id: s.id,
+    baby_id: babyId,
+    created_at: s.createdAt,
+    updated_at: s.updatedAt,
+    preview: s.preview,
+  };
+}
+
+function rowToChatSession(r: any): ChatSession {
+  return {
+    id: r.id,
+    babyId: r.baby_id,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    preview: r.preview,
+  };
+}
+
 export async function loadSessions(babyId: string): Promise<ChatSession[]> {
-  const data = await AsyncStorage.getItem(`mia_sessions_${babyId}`);
-  if (!data) return [];
-  return JSON.parse(data) as ChatSession[];
+  const { data, error } = await supabase.from("chat_sessions").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToChatSession);
 }
 
 export async function saveSessions(babyId: string, sessions: ChatSession[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_sessions_${babyId}`, JSON.stringify(sessions));
+  await reconcile(
+    "chat_sessions",
+    ["baby_id", babyId],
+    "id",
+    sessions.map((s) => s.id),
+    sessions.map((s) => chatSessionToRow(babyId, s))
+  );
 }
 
 export async function createSession(babyId: string): Promise<ChatSession> {
@@ -124,19 +262,44 @@ export async function updateSessionPreview(
 export async function deleteSession(babyId: string, sessionId: string): Promise<void> {
   const sessions = await loadSessions(babyId);
   await saveSessions(babyId, sessions.filter((s) => s.id !== sessionId));
-  await AsyncStorage.removeItem(`mia_messages_${sessionId}`);
+  await supabase.from("chat_messages").delete().eq("session_id", sessionId);
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
 
+function chatMessageToRow(sessionId: string, m: ChatMessage) {
+  return {
+    session_id: sessionId,
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    timestamp: m.timestamp,
+  };
+}
+
+function rowToChatMessage(r: any): ChatMessage {
+  return {
+    id: r.id,
+    role: r.role,
+    content: r.content,
+    timestamp: r.timestamp,
+  };
+}
+
 export async function saveMessages(sessionId: string, messages: ChatMessage[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_messages_${sessionId}`, JSON.stringify(messages));
+  await reconcile(
+    "chat_messages",
+    ["session_id", sessionId],
+    "id",
+    messages.map((m) => m.id),
+    messages.map((m) => chatMessageToRow(sessionId, m))
+  );
 }
 
 export async function loadMessages(sessionId: string): Promise<ChatMessage[]> {
-  const data = await AsyncStorage.getItem(`mia_messages_${sessionId}`);
-  if (!data) return [];
-  return JSON.parse(data) as ChatMessage[];
+  const { data, error } = await supabase.from("chat_messages").select("*").eq("session_id", sessionId);
+  if (error) throw error;
+  return (data ?? []).map(rowToChatMessage);
 }
 
 export async function deleteProfile(id: string): Promise<void> {
@@ -145,45 +308,100 @@ export async function deleteProfile(id: string): Promise<void> {
   await saveProfiles(profiles.filter((p) => p.id !== id));
   // Remove all sessions + their messages
   const sessions = await loadSessions(id);
-  await Promise.all(sessions.map((s) => AsyncStorage.removeItem(`mia_messages_${s.id}`)));
-  await AsyncStorage.removeItem(`mia_sessions_${id}`);
-  // Remove memories, weight logs
-  await AsyncStorage.removeItem(`mia_memories_${id}`);
-  await AsyncStorage.removeItem(`mia_weight_logs_${id}`);
-  await AsyncStorage.removeItem(`mia_feeding_logs_${id}`);
-  await AsyncStorage.removeItem(`mia_sleep_logs_${id}`);
+  if (sessions.length > 0) {
+    await supabase.from("chat_messages").delete().in("session_id", sessions.map((s) => s.id));
+  }
+  await supabase.from("chat_sessions").delete().eq("baby_id", id);
+  // Remove memories, weight/feeding/sleep logs, milestones
+  await supabase.from("memories").delete().eq("baby_id", id);
+  await supabase.from("weight_logs").delete().eq("baby_id", id);
+  await supabase.from("feeding_logs").delete().eq("baby_id", id);
+  await supabase.from("sleep_logs").delete().eq("baby_id", id);
+  await supabase.from("milestone_progress").delete().eq("baby_id", id);
+  // Active timer is ephemeral, device-local UI state — stays in AsyncStorage
   await AsyncStorage.removeItem(`mia_active_timer_${id}`);
-  await AsyncStorage.removeItem(`mia_milestones_${id}`);
 }
 
 export async function deleteParentProfile(id: string): Promise<void> {
   const profiles = await loadParentProfiles();
   await saveParentProfiles(profiles.filter((p) => p.id !== id));
-  await AsyncStorage.removeItem(`mia_memories_${id}`);
+  await supabase.from("memories").delete().eq("baby_id", id);
 }
 
 // ─── Memories ─────────────────────────────────────────────────────────────────
 
+function memoryToRow(babyId: string, m: Memory) {
+  return {
+    baby_id: babyId,
+    id: m.id,
+    content: m.content,
+    category: m.category,
+    created_at: m.createdAt,
+  };
+}
+
+function rowToMemory(r: any): Memory {
+  return {
+    id: r.id,
+    babyId: r.baby_id,
+    content: r.content,
+    category: r.category,
+    createdAt: r.created_at,
+  };
+}
+
 export async function saveMemories(babyId: string, memories: Memory[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_memories_${babyId}`, JSON.stringify(memories));
+  await reconcile(
+    "memories",
+    ["baby_id", babyId],
+    "id",
+    memories.map((m) => m.id),
+    memories.map((m) => memoryToRow(babyId, m))
+  );
 }
 
 export async function loadMemories(babyId: string): Promise<Memory[]> {
-  const data = await AsyncStorage.getItem(`mia_memories_${babyId}`);
-  if (!data) return [];
-  return JSON.parse(data) as Memory[];
+  const { data, error } = await supabase.from("memories").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToMemory);
 }
 
 // ─── Weight Logs ──────────────────────────────────────────────────────────────
 
+function weightLogToRow(babyId: string, l: WeightLog) {
+  return {
+    baby_id: babyId,
+    id: l.id,
+    weight_grams: l.weightGrams,
+    measured_at: l.measuredAt,
+    note: l.note ?? null,
+  };
+}
+
+function rowToWeightLog(r: any): WeightLog {
+  return {
+    id: r.id,
+    babyId: r.baby_id,
+    weightGrams: r.weight_grams,
+    measuredAt: r.measured_at,
+    note: r.note ?? undefined,
+  };
+}
+
 export async function loadWeightLogs(babyId: string): Promise<WeightLog[]> {
-  const data = await AsyncStorage.getItem(`mia_weight_logs_${babyId}`);
-  if (!data) return [];
-  return JSON.parse(data) as WeightLog[];
+  const { data, error } = await supabase.from("weight_logs").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToWeightLog).sort((a, b) => a.measuredAt.localeCompare(b.measuredAt));
 }
 
 export async function saveWeightLogs(babyId: string, logs: WeightLog[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_weight_logs_${babyId}`, JSON.stringify(logs));
+  await reconcile(
+    "weight_logs",
+    ["baby_id", babyId],
+    "id",
+    logs.map((l) => l.id),
+    logs.map((l) => weightLogToRow(babyId, l))
+  );
 }
 
 export async function addWeightLog(
@@ -206,14 +424,46 @@ export async function deleteWeightLog(babyId: string, logId: string): Promise<vo
 
 // ─── Feeding Logs ─────────────────────────────────────────────────────────────
 
+function feedingLogToRow(babyId: string, l: FeedingLog) {
+  return {
+    baby_id: babyId,
+    id: l.id,
+    type: l.type,
+    started_at: l.startedAt,
+    duration_minutes: l.durationMinutes,
+    side: l.side ?? null,
+    amount_ml: l.amountMl ?? null,
+    note: l.note ?? null,
+  };
+}
+
+function rowToFeedingLog(r: any): FeedingLog {
+  return {
+    id: r.id,
+    babyId: r.baby_id,
+    type: r.type,
+    startedAt: r.started_at,
+    durationMinutes: r.duration_minutes,
+    side: r.side ?? undefined,
+    amountMl: r.amount_ml ?? undefined,
+    note: r.note ?? undefined,
+  };
+}
+
 export async function loadFeedingLogs(babyId: string): Promise<FeedingLog[]> {
-  const data = await AsyncStorage.getItem(`mia_feeding_logs_${babyId}`);
-  if (!data) return [];
-  return JSON.parse(data) as FeedingLog[];
+  const { data, error } = await supabase.from("feeding_logs").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToFeedingLog);
 }
 
 export async function saveFeedingLogs(babyId: string, logs: FeedingLog[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_feeding_logs_${babyId}`, JSON.stringify(logs));
+  await reconcile(
+    "feeding_logs",
+    ["baby_id", babyId],
+    "id",
+    logs.map((l) => l.id),
+    logs.map((l) => feedingLogToRow(babyId, l))
+  );
 }
 
 export async function addFeedingLog(babyId: string, entry: Omit<FeedingLog, "id" | "babyId">): Promise<FeedingLog> {
@@ -230,14 +480,44 @@ export async function deleteFeedingLog(babyId: string, logId: string): Promise<v
 
 // ─── Sleep Logs ───────────────────────────────────────────────────────────────
 
+function sleepLogToRow(babyId: string, l: SleepLog) {
+  return {
+    baby_id: babyId,
+    id: l.id,
+    type: l.type,
+    started_at: l.startedAt,
+    ended_at: l.endedAt,
+    duration_minutes: l.durationMinutes,
+    note: l.note ?? null,
+  };
+}
+
+function rowToSleepLog(r: any): SleepLog {
+  return {
+    id: r.id,
+    babyId: r.baby_id,
+    type: r.type,
+    startedAt: r.started_at,
+    endedAt: r.ended_at,
+    durationMinutes: r.duration_minutes,
+    note: r.note ?? undefined,
+  };
+}
+
 export async function loadSleepLogs(babyId: string): Promise<SleepLog[]> {
-  const data = await AsyncStorage.getItem(`mia_sleep_logs_${babyId}`);
-  if (!data) return [];
-  return JSON.parse(data) as SleepLog[];
+  const { data, error } = await supabase.from("sleep_logs").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToSleepLog);
 }
 
 export async function saveSleepLogs(babyId: string, logs: SleepLog[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_sleep_logs_${babyId}`, JSON.stringify(logs));
+  await reconcile(
+    "sleep_logs",
+    ["baby_id", babyId],
+    "id",
+    logs.map((l) => l.id),
+    logs.map((l) => sleepLogToRow(babyId, l))
+  );
 }
 
 export async function addSleepLog(babyId: string, entry: Omit<SleepLog, "id" | "babyId">): Promise<SleepLog> {
@@ -254,13 +534,37 @@ export async function deleteSleepLog(babyId: string, logId: string): Promise<voi
 
 // ─── Milestone Progress ───────────────────────────────────────────────────────
 
+function milestoneProgressToRow(babyId: string, p: MilestoneProgress) {
+  return {
+    baby_id: babyId,
+    milestone_id: p.milestoneId,
+    status: p.status,
+    achieved_at: p.achievedAt ?? null,
+  };
+}
+
+function rowToMilestoneProgress(r: any): MilestoneProgress {
+  return {
+    milestoneId: r.milestone_id,
+    status: r.status,
+    achievedAt: r.achieved_at ?? undefined,
+  };
+}
+
 export async function loadMilestoneProgress(babyId: string): Promise<MilestoneProgress[]> {
-  const raw = await AsyncStorage.getItem(`mia_milestones_${babyId}`);
-  return raw ? JSON.parse(raw) : [];
+  const { data, error } = await supabase.from("milestone_progress").select("*").eq("baby_id", babyId);
+  if (error) throw error;
+  return (data ?? []).map(rowToMilestoneProgress);
 }
 
 export async function saveMilestoneProgress(babyId: string, progress: MilestoneProgress[]): Promise<void> {
-  await AsyncStorage.setItem(`mia_milestones_${babyId}`, JSON.stringify(progress));
+  await reconcile(
+    "milestone_progress",
+    ["baby_id", babyId],
+    "milestone_id",
+    progress.map((p) => p.milestoneId),
+    progress.map((p) => milestoneProgressToRow(babyId, p))
+  );
 }
 
 export async function setMilestoneStatus(

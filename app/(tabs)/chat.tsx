@@ -16,6 +16,8 @@ import {
   loadSessions,
   createSession,
 } from "../../utils/storage";
+import { CHAT_ENABLED } from "../../utils/config";
+import ChatComingSoon from "../../components/ChatComingSoon";
 
 type SessionWithProfile = ChatSession & {
   profileId: string;
@@ -37,6 +39,11 @@ function formatDate(iso: string): string {
 }
 
 export default function ChatTab() {
+  if (!CHAT_ENABLED) return <ChatComingSoon />;
+  return <ChatTabInner />;
+}
+
+function ChatTabInner() {
   const [sessions, setSessions] = useState<SessionWithProfile[]>([]);
   const [babies, setBabies] = useState<BabyProfile[]>([]);
   const [pregnancies, setPregnancies] = useState<PregnancyProfile[]>([]);

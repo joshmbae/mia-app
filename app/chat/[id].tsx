@@ -14,12 +14,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, Memory, FeedingLog, SleepLog } from "../../types";
 import { loadProfiles, loadParentProfiles, loadPregnancyProfiles, loadMessages, saveMessages, loadMemories, saveMemories, updateSessionPreview, loadFeedingLogs, loadSleepLogs, loadMilestoneProgress } from "../../utils/storage";
+import { supabase } from "../../utils/supabase";
 import { MILESTONES } from "../../utils/milestoneData";
 import SuggestionChips from "../../components/SuggestionChips";
+import { CHAT_ENABLED } from "../../utils/config";
+import ChatComingSoon from "../../components/ChatComingSoon";
 
-const API_URL = "https://mia-backend-production-17ee.up.railway.app";
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function ChatScreen() {
+  if (!CHAT_ENABLED) return <ChatComingSoon />;
+
+  return <ChatScreenInner />;
+}
+
+function ChatScreenInner() {
   const { id, babyId: babyIdParam, pregnancyId: pregnancyIdParam } = useLocalSearchParams<{ id: string; babyId?: string; pregnancyId?: string }>();
   const [profile, setProfile] = useState<BabyProfile | null>(null);
   const [pregnancyProfile, setPregnancyProfile] = useState<PregnancyProfile | null>(null);
@@ -42,7 +51,7 @@ export default function ChatScreen() {
         const msgs = await loadMessages("general");
         if (msgs.length === 0) {
           const greeting: ChatMessage = {
-            id: "greeting", role: "assistant",
+            id: `greeting-${Date.now()}`, role: "assistant",
             content: "Hallo! Ich bin Mia 👋 Du kannst mich alles rund um Schwangerschaft, Wochenbett und das erste Baby-Jahr fragen. Was beschäftigt dich?",
             timestamp: new Date().toISOString(),
           };
@@ -71,7 +80,7 @@ export default function ChatScreen() {
         const msgs = await loadMessages(id);
         if (msgs.length === 0) {
           const greeting: ChatMessage = {
-            id: "greeting", role: "assistant",
+            id: `greeting-${Date.now()}`, role: "assistant",
             content: `Hallo! Ich bin Mia 👋 Schön, dass du da bist. Ich begleite dich und ${foundPregnancy?.nickname ?? "euer Baby"} gerne durch die Schwangerschaft. Was beschäftigt dich gerade?`,
             timestamp: new Date().toISOString(),
           };
@@ -112,7 +121,7 @@ export default function ChatScreen() {
         const msgs = await loadMessages(id);
         if (msgs.length === 0) {
           const greeting: ChatMessage = {
-            id: "greeting", role: "assistant",
+            id: `greeting-${Date.now()}`, role: "assistant",
             content: `Hallo! Ich bin Mia 👋 Schön, dass du da bist. Ich begleite dich und ${found?.name ?? "euch"} gerne durch den Alltag. Was beschäftigt dich gerade?`,
             timestamp: new Date().toISOString(),
           };
@@ -153,11 +162,30 @@ export default function ChatScreen() {
     }
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
       const res = await fetch(`${API_URL}/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ messages: withUser, profile, pregnancyProfile, memories, parents, parentMemories, recentFeedings, recentSleeps, achievedMilestones, tryingMilestones }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({} as { error?: string }));
+        const errorMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(), role: "assistant",
+          content: errData.error || "Mia konnte gerade nicht antworten. Bitte versuch es später erneut.",
+          timestamp: new Date().toISOString(),
+        };
+        const final = [...withUser, errorMsg];
+        setMessages(final);
+        await saveMessages(id, final);
+        return;
+      }
 
       const data = await res.json();
 

@@ -10,11 +10,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BabyProfile, PregnancyProfile } from "../../types";
-import { loadProfiles, loadPregnancyProfiles, createSession, loadMilestoneProgress } from "../../utils/storage";
+import { BabyProfile, PregnancyProfile, FeedingLog, SleepLog } from "../../types";
+import { loadProfiles, loadPregnancyProfiles, createSession, loadMilestoneProgress, loadFeedingLogs, loadSleepLogs } from "../../utils/storage";
 import { getCurrentPhase, getAgeWeeks, getPhaseBadgeNumber } from "../../utils/developmentPhases";
 import { MILESTONES, getActiveMilestones } from "../../utils/milestoneData";
 import { getPregnancyBlock } from "../../utils/pregnancyDevelopmentContent";
+import { formatRelativeTime } from "../../utils/formatRelativeTime";
 import MiaLogo from "../../components/MiaLogo";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,7 +60,15 @@ function getMiaPrompt(profiles: BabyProfile[], pregnancies: PregnancyProfile[]):
 
 // ─── Baby Card ────────────────────────────────────────────────────────────────
 
-function BabyCard({ profile, achievedIds, onChat }: { profile: BabyProfile; achievedIds: Set<string>; onChat: () => void }) {
+function BabyCard({
+  profile, achievedIds, activity, showPhaseTip, onChat,
+}: {
+  profile: BabyProfile;
+  achievedIds: Set<string>;
+  activity?: { lastFeeding?: FeedingLog; lastSleep?: SleepLog };
+  showPhaseTip: boolean;
+  onChat: () => void;
+}) {
   const phase = getCurrentPhase(profile.birthDate);
   const ageWeeks = getAgeWeeks(profile.birthDate);
 
@@ -107,6 +116,26 @@ function BabyCard({ profile, achievedIds, onChat }: { profile: BabyProfile; achi
         </TouchableOpacity>
       </View>
 
+      {/* Zuletzt gestillt/geschlafen */}
+      <View style={styles.activityRow}>
+        <View style={styles.activityChip}>
+          <Text style={styles.activityEmoji}>🤱</Text>
+          <Text style={styles.activityLabel} numberOfLines={1}>
+            {activity?.lastFeeding
+              ? formatRelativeTime(activity.lastFeeding.startedAt)
+              : "Noch nichts erfasst"}
+          </Text>
+        </View>
+        <View style={styles.activityChip}>
+          <Text style={styles.activityEmoji}>😴</Text>
+          <Text style={styles.activityLabel} numberOfLines={1}>
+            {activity?.lastSleep
+              ? formatRelativeTime(activity.lastSleep.endedAt ?? activity.lastSleep.startedAt)
+              : "Noch nichts erfasst"}
+          </Text>
+        </View>
+      </View>
+
       {/* Phase strip + Fortschritt */}
       {phase && (
         <View style={styles.phaseStrip}>
@@ -123,6 +152,14 @@ function BabyCard({ profile, achievedIds, onChat }: { profile: BabyProfile; achi
               <Text style={styles.phaseProgressLabel}>{achieved}/{total}</Text>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Phasen-Tipp (nur bei genau einem Kind) */}
+      {showPhaseTip && phase?.parentTip && (
+        <View style={styles.phaseTipRow}>
+          <Text style={{ fontSize: 12 }}>💡</Text>
+          <Text style={styles.phaseTipText} numberOfLines={2}>{phase.parentTip}</Text>
         </View>
       )}
 
@@ -196,17 +233,28 @@ export default function HomeScreen() {
   const [profiles, setProfiles] = useState<BabyProfile[]>([]);
   const [pregnancies, setPregnancies] = useState<PregnancyProfile[]>([]);
   const [milestoneMap, setMilestoneMap] = useState<Record<string, Set<string>>>({});
+  const [activityMap, setActivityMap] = useState<Record<string, { lastFeeding?: FeedingLog; lastSleep?: SleepLog }>>({});
 
   useFocusEffect(
     useCallback(() => {
       loadProfiles().then(async (loaded) => {
         setProfiles(loaded);
-        const map: Record<string, Set<string>> = {};
+        const milestones: Record<string, Set<string>> = {};
+        const activity: Record<string, { lastFeeding?: FeedingLog; lastSleep?: SleepLog }> = {};
         await Promise.all(loaded.map(async (p) => {
-          const progress = await loadMilestoneProgress(p.id);
-          map[p.id] = new Set(progress.filter((x) => x.status === "achieved").map((x) => x.milestoneId));
+          const [progress, feedingLogs, sleepLogs] = await Promise.all([
+            loadMilestoneProgress(p.id),
+            loadFeedingLogs(p.id),
+            loadSleepLogs(p.id),
+          ]);
+          milestones[p.id] = new Set(progress.filter((x) => x.status === "achieved").map((x) => x.milestoneId));
+          activity[p.id] = {
+            lastFeeding: [...feedingLogs].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0],
+            lastSleep: [...sleepLogs].sort((a, b) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt))[0],
+          };
         }));
-        setMilestoneMap(map);
+        setMilestoneMap(milestones);
+        setActivityMap(activity);
       });
       loadPregnancyProfiles().then(setPregnancies);
     }, [])
@@ -310,6 +358,8 @@ export default function HomeScreen() {
                 key={profile.id}
                 profile={profile}
                 achievedIds={milestoneMap[profile.id] ?? new Set()}
+                activity={activityMap[profile.id]}
+                showPhaseTip={profiles.length === 1}
                 onChat={() => startChildChat(profile.id)}
               />
             ))}
@@ -425,6 +475,24 @@ const styles = StyleSheet.create({
     width: 7, height: 7, borderRadius: 4, backgroundColor: "#4A7C6F",
   },
   phaseStripText: { flex: 1, fontSize: 13, fontWeight: "600", color: "#4A4440" },
+
+  // Activity row (zuletzt gestillt/geschlafen)
+  activityRow: {
+    flexDirection: "row", gap: 8,
+  },
+  activityChip: {
+    flex: 1, flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: "#F5F0E8", borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 7,
+  },
+  activityEmoji: { fontSize: 13 },
+  activityLabel: { flex: 1, fontSize: 12.5, fontWeight: "600", color: "#4A4440" },
+
+  // Phasen-Tipp
+  phaseTipRow: {
+    flexDirection: "row", gap: 6, paddingHorizontal: 2,
+  },
+  phaseTipText: { flex: 1, fontSize: 12, color: "#7A7269", lineHeight: 17 },
 
   // Trimester row (Schwangerschaftskarte)
   trimesterRow: {

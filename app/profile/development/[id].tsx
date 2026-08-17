@@ -37,8 +37,8 @@ type Tab = "jetzt" | "meilensteine" | "spruenge";
 
 const STATUS_LABELS: Record<MilestoneStatus, string> = {
   not_yet: "Noch nicht",
-  trying: "Übt es",
-  achieved: "Kann es ✓",
+  trying: "Ist dabei",
+  achieved: "Geschafft! 🎉",
 };
 const STATUS_COLORS: Record<MilestoneStatus, string> = {
   not_yet: "#E5DDD5",
@@ -86,8 +86,22 @@ export default function DevelopmentScreen() {
   );
 
   async function handleStatusChange(milestoneId: string, status: MilestoneStatus) {
-    const updated = await setMilestoneStatus(id, milestoneId, status);
-    setMilestoneProgressState(updated);
+    const previous = milestoneProgress;
+    const optimistic = [
+      ...previous.filter((p) => p.milestoneId !== milestoneId),
+      {
+        milestoneId,
+        status,
+        achievedAt: status === "achieved" ? new Date().toISOString() : undefined,
+      },
+    ];
+    setMilestoneProgressState(optimistic);
+    try {
+      const updated = await setMilestoneStatus(id, milestoneId, status);
+      setMilestoneProgressState(updated);
+    } catch (err) {
+      setMilestoneProgressState(previous);
+    }
   }
 
   if (!profile) return null;
@@ -212,7 +226,7 @@ function JetztTab({
         <Text style={styles.chipHint}>Tippe um Meilensteine abzuhaken →</Text>
       </TouchableOpacity>
 
-      <SectionCard title="Typisches Verhalten" emoji="📍" bgColor="#F5F0E8" borderColor="#E5D8C8" items={displayPhase.typical} dotColor="#C8A96E" />
+      <SectionCard title="Typisches Verhalten" emoji="📍" bgColor="#F0EBE3" borderColor="#E5D8C8" items={displayPhase.typical} dotColor="#C8A96E" />
 
       <View style={[styles.sectionCard, { backgroundColor: "#FDF5F0", borderColor: "#F0D8C8" }]}>
         <View style={styles.sectionHeader}>
@@ -237,7 +251,7 @@ function JetztTab({
 
       {nextPhase && (
         <TouchableOpacity
-          style={[styles.sectionCard, { backgroundColor: "#F5F0E8", borderColor: "#E5D8C8" }]}
+          style={[styles.sectionCard, { backgroundColor: "#F0EBE3", borderColor: "#E5D8C8" }]}
           onPress={onGoToPhasen}
           activeOpacity={0.8}
         >
@@ -580,7 +594,11 @@ function ConfettiBurst({ onDone }: { onDone: () => void }) {
         ]),
       ]);
     });
-    Animated.parallel(anims).start(() => onDone());
+    const animation = Animated.parallel(anims);
+    animation.start(({ finished }) => {
+      if (finished) onDone();
+    });
+    return () => animation.stop();
   }, []);
 
   return (
@@ -625,9 +643,22 @@ function MilestoneCard({
   onStatusChange: (id: string, status: MilestoneStatus) => void;
   dimmed?: boolean;
 }) {
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [confettiKey, setConfettiKey] = useState<number | null>(null);
   const prevStatus = useRef(status);
   const achievedScale = useRef(new Animated.Value(1)).current;
+  const achievedScaleAnim = useRef<Animated.CompositeAnimation | null>(null);
+  const btnScales = useRef<Record<MilestoneStatus, Animated.Value>>({
+    not_yet: new Animated.Value(1),
+    trying: new Animated.Value(1),
+    achieved: new Animated.Value(1),
+  }).current;
+
+  function pressIn(s: MilestoneStatus) {
+    Animated.spring(btnScales[s], { toValue: 0.92, friction: 6, useNativeDriver: true }).start();
+  }
+  function pressOut(s: MilestoneStatus) {
+    Animated.spring(btnScales[s], { toValue: 1, friction: 5, useNativeDriver: true }).start();
+  }
   const catColor = CATEGORY_COLORS[milestone.category];
   const isTypicalNow = ageWeeks >= milestone.typicalWeeksFrom && ageWeeks <= milestone.typicalWeeksTo;
   const isUpcoming = ageWeeks < milestone.typicalWeeksFrom;
@@ -637,11 +668,14 @@ function MilestoneCard({
     prevStatus.current = newStatus;
     onStatusChange(milestone.id, newStatus);
     if (newStatus === "achieved" && !wasAchieved) {
-      setShowConfetti(true);
-      Animated.sequence([
+      setConfettiKey(Date.now());
+      achievedScaleAnim.current?.stop();
+      achievedScale.setValue(1);
+      achievedScaleAnim.current = Animated.sequence([
         Animated.spring(achievedScale, { toValue: 1.4, friction: 3, useNativeDriver: true }),
         Animated.spring(achievedScale, { toValue: 1, friction: 5, useNativeDriver: true }),
-      ]).start();
+      ]);
+      achievedScaleAnim.current.start();
     }
   }
 
@@ -651,7 +685,9 @@ function MilestoneCard({
       isTypicalNow && status !== "achieved" && !dimmed && styles.milestoneCardHighlight,
       dimmed && styles.milestoneCardDimmed,
     ]}>
-      {showConfetti && <ConfettiBurst onDone={() => setShowConfetti(false)} />}
+      {confettiKey !== null && (
+        <ConfettiBurst key={confettiKey} onDone={() => setConfettiKey(null)} />
+      )}
 
       {/* Category tag + title */}
       <View style={styles.milestoneCardHeader}>
@@ -691,22 +727,29 @@ function MilestoneCard({
       {/* Status buttons */}
       <View style={styles.statusRow}>
         {(["not_yet", "trying", "achieved"] as MilestoneStatus[]).map((s) => (
-          <TouchableOpacity
-            key={s}
-            style={[
-              styles.statusBtn,
-              { backgroundColor: status === s ? STATUS_COLORS[s] : "#F0EBE3" },
-            ]}
-            onPress={() => handleStatusChange(s)}
-            activeOpacity={0.7}
-          >
-            <Text style={[
-              styles.statusBtnText,
-              { color: status === s ? STATUS_TEXT_COLORS[s] : "#B0A89A" },
-            ]}>
-              {STATUS_LABELS[s]}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View key={s} style={{ flex: 1, transform: [{ scale: btnScales[s] }] }}>
+            <TouchableOpacity
+              style={[
+                styles.statusBtn,
+                { backgroundColor: status === s ? STATUS_COLORS[s] : "#F0EBE3" },
+              ]}
+              onPress={() => handleStatusChange(s)}
+              onPressIn={() => pressIn(s)}
+              onPressOut={() => pressOut(s)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.statusBtnText,
+                  { color: status === s ? STATUS_TEXT_COLORS[s] : "#B0A89A" },
+                ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {STATUS_LABELS[s]}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         ))}
       </View>
     </View>
@@ -979,7 +1022,7 @@ const styles = StyleSheet.create({
   milestoneSumDividerSm: { width: 1, height: 24, backgroundColor: "#E5DDD5" },
   disclaimerToggleBtn: { paddingLeft: 8 },
   milestoneDisclaimer: {
-    backgroundColor: "#F5F0E8", borderRadius: 10, padding: 12,
+    backgroundColor: "#F0EBE3", borderRadius: 10, padding: 12,
     marginBottom: 8, borderWidth: 1, borderColor: "#E5D8C8",
   },
   milestoneDisclaimerTitle: {

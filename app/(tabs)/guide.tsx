@@ -2,6 +2,8 @@ import { useState } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { supabase } from "../../utils/supabase";
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ const GROUPS: FeatureGroup[] = [
         title: "Meilensteine",
         summary:
           'Im Tab "Meilensteine" siehst du alle Entwicklungsschritte nach Bereichen (Motorik, Sprache, Soziales, Kognition). Aktive Meilensteine sind jetzt oder in den nächsten 4 Wochen typisch. Zukünftige werden ausgegraut angezeigt.',
-        tip: 'Setze einen Meilenstein auf "Kann es" — Konfetti inklusive 🎉',
+        tip: 'Setze einen Meilenstein auf "Geschafft!" — Konfetti inklusive 🎉',
       },
       {
         emoji: "🔢",
@@ -210,6 +212,16 @@ export default function GuideScreen() {
         <Text style={styles.footer}>
           Mia ist eine KI-Assistentin und kein Ersatz für ärztlichen Rat. Bei medizinischen Fragen wende dich immer an deinen Kinderarzt.
         </Text>
+
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={async () => {
+            await supabase.auth.signOut();
+            router.replace("/login");
+          }}
+        >
+          <Text style={styles.logoutText}>Abmelden</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -263,4 +275,11 @@ const styles = StyleSheet.create({
     fontSize: 12, color: "#B0A89A", textAlign: "center",
     lineHeight: 18, marginTop: 8, fontStyle: "italic",
   },
+
+  logoutBtn: {
+    alignItems: "center",
+    marginTop: 24,
+    paddingVertical: 12,
+  },
+  logoutText: { color: "#C0392B", fontSize: 14, fontWeight: "700" },
 });

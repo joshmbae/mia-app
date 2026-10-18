@@ -1,27 +1,40 @@
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../utils/supabase";
+import { useFamily } from "../utils/family";
+import { colors } from "../utils/theme";
+import { MiaMark } from "../components/ui/MiaMark";
+
+type Target = "login" | "onboarding" | "app";
 
 export default function Index() {
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
-  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const { refresh } = useFamily();
+  const [target, setTarget] = useState<Target | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setLoggedIn(!!data.session));
-    AsyncStorage.getItem("mia_onboarded").then((val) => setOnboarded(!!val));
-  }, []);
+    async function decide() {
+      const [{ data }, onboarded] = await Promise.all([
+        supabase.auth.getSession(),
+        AsyncStorage.getItem("mia_onboarded").catch(() => null),
+      ]);
+      if (!data.session) return setTarget("login");
+      if (!onboarded) return setTarget("onboarding");
+      await refresh();
+      setTarget("app");
+    }
+    decide();
+  }, [refresh]);
 
-  if (loggedIn === null || onboarded === null) {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#FDFAF6", alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator color="#4A7C6F" />
-      </View>
-    );
-  }
+  if (target === "login") return <Redirect href="/login" />;
+  if (target === "onboarding") return <Redirect href="/onboarding" />;
+  if (target === "app") return <Redirect href="/(tabs)/start" />;
 
-  if (!loggedIn) return <Redirect href="/login" />;
-  if (!onboarded) return <Redirect href="/onboarding" />;
-  return <Redirect href="/(tabs)/home" />;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <MiaMark size={88} />
+      <ActivityIndicator color={colors.coral} />
+    </View>
+  );
 }

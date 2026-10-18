@@ -2,39 +2,17 @@ export interface BabyProfile {
   id: string;
   name: string;
   birthDate: string;
-  dueDate?: string;         // Errechneter Geburtstermin (für Entwicklungssprünge)
+  dueDate?: string;         // Errechneter Geburtstermin (bei Frühchen für das korrigierte Alter)
   gender?: "male" | "female" | "other";
-  feedingType: "breastfed" | "formula" | "mixed";
+  feedingType?: "breastfed" | "formula" | "mixed"; // Altbestand, wird nicht mehr abgefragt
   avatarColor: string;
   createdAt: string;
-  photoUri?: string;
-  weightGrams?: number;
+  photoUri?: string;        // "storage:<pfad>" oder lokale URI
+  weightGrams?: number;     // Altbestand: Geburtsgewicht, jetzt als Wachstumseintrag
   premature?: boolean;
   siblings?: string;
   medicalNotes?: string;
-  description?: string;
-}
-
-// Ein festgehaltener Moment im Tagebuch — entweder zu einem Meilenstein aus
-// dem Katalog (milestoneId) oder ein ganz eigener Moment (ohne milestoneId).
-export interface MomentEntry {
-  id: string;
-  babyId: string;
-  milestoneId?: string;
-  title: string;
-  emoji?: string;
-  happenedOn: string;     // ISO date only: "2025-03-01"
-  note?: string;
-  photos: string[];       // "storage:<pfad>" (Supabase Storage) oder lokale URI
-  createdAt: string;
-}
-
-export interface ParentProfile {
-  id: string;
-  name: string;
-  role: "Mutter" | "Vater" | "andere";
-  createdAt: string;
-  description?: string;
+  description?: string;     // Notizen
 }
 
 export interface PregnancyProfile {
@@ -46,48 +24,33 @@ export interface PregnancyProfile {
   description?: string;
 }
 
-// ─── Feeding & Sleep Logs ────────────────────────────────────────────────────
+/** Ein Kind in der App — schon geboren oder noch im Bauch */
+export type Child =
+  | { kind: "baby"; id: string; name: string; color: string; profile: BabyProfile }
+  | { kind: "pregnancy"; id: string; name: string; color: string; profile: PregnancyProfile };
 
-export type FeedingType = "breast" | "bottle";
-export type BreastSide = "left" | "right" | "both";
-export type SleepType = "nap" | "night";
-
-export interface FeedingLog {
+// Ein festgehaltener Moment im Tagebuch — entweder zu einem Meilenstein aus
+// dem Katalog (milestoneId) oder ein ganz eigener Moment (ohne milestoneId).
+export interface MomentEntry {
   id: string;
-  babyId: string;
-  type: FeedingType;
-  startedAt: string;          // ISO datetime
-  durationMinutes: number;
-  side?: BreastSide;          // only for "breast"
-  amountMl?: number;          // only for "bottle"
+  babyId: string;         // Kind- oder Schwangerschafts-ID
+  milestoneId?: string;
+  title: string;
+  emoji?: string;
+  happenedOn: string;     // ISO date only: "2025-03-01"
   note?: string;
+  photos: string[];       // "storage:<pfad>" (Supabase Storage) oder lokale URI
+  createdAt: string;
 }
 
-export interface SleepLog {
+/** Eine Messung: Größe, Gewicht und/oder Kopfumfang an einem Tag */
+export interface GrowthEntry {
   id: string;
   babyId: string;
-  type: SleepType;
-  startedAt: string;
-  endedAt: string;
-  durationMinutes: number;
+  measuredOn: string;     // ISO date only
+  heightCm?: number;
+  weightGrams?: number;
+  headCm?: number;
   note?: string;
-}
-
-export interface ActiveTimer {
-  babyId: string;
-  timerType: "feeding" | "sleep";
-  feedingType?: FeedingType;
-  side?: BreastSide;
-  sleepType?: SleepType;
-  startedAt: string;          // ISO datetime
-}
-
-// ─── Weight Logs ─────────────────────────────────────────────────────────────
-
-export interface WeightLog {
-  id: string;
-  babyId: string;
-  weightGrams: number;
-  measuredAt: string;   // ISO date only: "2025-03-01"
-  note?: string;
+  createdAt: string;
 }

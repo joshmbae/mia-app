@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mia-app",
+    "name": "Mia",
     "slug": "mia-app",
     "scheme": "mia-app",
     "version": "1.0.0",
@@ -10,21 +10,20 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFF3EA"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFF3EA",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.RECORD_AUDIO",
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO"
       ]
     },
@@ -36,8 +35,18 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Mia möchte auf deine Fotos zugreifen, um ein Profilbild hinzuzufügen.",
-          "cameraPermission": "Mia möchte die Kamera nutzen, um ein Profilfoto aufzunehmen."
+          "photosPermission": "Mia möchte auf deine Fotos zugreifen, damit du Momente und Profilbilder festhalten kannst.",
+          "cameraPermission": "Mia möchte die Kamera nutzen, damit du Momente direkt fotografieren kannst.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FFF3EA",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
         }
       ]
     ],

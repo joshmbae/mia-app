@@ -4,7 +4,7 @@
 // Jedes Kind hat sein eigenes Tempo, es gibt kein "zu früh" und kein "zu spät".
 // Die Reihenfolge im Array ist nur eine grobe, natürliche Abfolge zur Anzeige.
 
-export type MilestoneCategory = "erste_male" | "motorik" | "sprache" | "sozial" | "kognitiv";
+export type MilestoneCategory = "schwangerschaft" | "erste_male" | "motorik" | "sprache" | "sozial" | "kognitiv";
 
 export interface Milestone {
   id: string;
@@ -15,9 +15,13 @@ export interface Milestone {
   tip?: string;
 }
 
-export const CATEGORY_ORDER: MilestoneCategory[] = ["erste_male", "motorik", "sprache", "sozial", "kognitiv"];
+export const CATEGORY_ORDER: MilestoneCategory[] = ["erste_male", "motorik", "sprache", "sozial", "kognitiv", "schwangerschaft"];
+
+/** Reihenfolge der Kategorien während der Schwangerschaft */
+export const PREGNANCY_CATEGORY_ORDER: MilestoneCategory[] = ["schwangerschaft"];
 
 export const CATEGORY_LABELS: Record<MilestoneCategory, string> = {
+  schwangerschaft: "Im Bauch",
   erste_male: "Erste Male",
   motorik: "Bewegung",
   sprache: "Sprache",
@@ -26,6 +30,7 @@ export const CATEGORY_LABELS: Record<MilestoneCategory, string> = {
 };
 
 export const CATEGORY_EMOJIS: Record<MilestoneCategory, string> = {
+  schwangerschaft: "🤰",
   erste_male: "✨",
   motorik: "🤸",
   sprache: "💬",
@@ -34,6 +39,7 @@ export const CATEGORY_EMOJIS: Record<MilestoneCategory, string> = {
 };
 
 export const CATEGORY_COLORS: Record<MilestoneCategory, string> = {
+  schwangerschaft: "#B36BC2",
   erste_male: "#F2A541",
   motorik: "#3FA38A",
   sprache: "#8C6CD9",
@@ -46,6 +52,28 @@ export const CUSTOM_MOMENT_EMOJI = "🌟";
 export const CUSTOM_MOMENT_COLOR = "#E8789A";
 
 export const MILESTONES: Milestone[] = [
+
+  // ── Im Bauch ─────────────────────────────────────────────────────────────────
+  { id: "preg_test", title: "Der positive Test", emoji: "💗", category: "schwangerschaft",
+    description: "Zwei Striche, ganz viel Herzklopfen — der Moment, in dem alles anfängt." },
+  { id: "preg_first_ultrasound", title: "Das erste Ultraschallbild", emoji: "🩻", category: "schwangerschaft",
+    description: "Ein kleines Pünktchen auf dem Bildschirm — und vielleicht schon ein flackernder Herzschlag.",
+    tip: "Ultraschallbilder verblassen mit der Zeit — ein Foto davon hält länger." },
+  { id: "preg_heartbeat", title: "Den Herzschlag hören", emoji: "💓", category: "schwangerschaft",
+    description: "Schnell wie ein galoppierendes Pferdchen." },
+  { id: "preg_tell_family", title: "Es der Familie erzählen", emoji: "🎁", category: "schwangerschaft",
+    description: "Wie haben Oma, Opa und Freunde reagiert?" },
+  { id: "preg_first_kick", title: "Der erste Tritt", emoji: "🦶", category: "schwangerschaft",
+    description: "Erst ein Blubbern, dann ein deutlicher Stups von innen." },
+  { id: "preg_bump", title: "Babybauch-Foto", emoji: "🤰", category: "schwangerschaft",
+    description: "Woche für Woche ein bisschen runder.",
+    tip: "Immer am selben Ort fotografieren — dann sieht man später schön, wie der Bauch wächst." },
+  { id: "preg_name", title: "Den Namen gefunden", emoji: "✍️", category: "schwangerschaft",
+    description: "Nach vielen Listen und Diskussionen: Das ist er!" },
+  { id: "preg_nursery", title: "Das Kinderzimmer ist fertig", emoji: "🧸", category: "schwangerschaft",
+    description: "Ein kleines Nest wartet." },
+  { id: "preg_hospital_bag", title: "Kliniktasche gepackt", emoji: "🧳", category: "schwangerschaft",
+    description: "Jetzt kann es losgehen." },
 
   // ── Erste Male ───────────────────────────────────────────────────────────────
   { id: "first_bath", title: "Das erste Bad", emoji: "🛁", category: "erste_male",

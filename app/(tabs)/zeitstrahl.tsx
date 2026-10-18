@@ -7,12 +7,16 @@ import { Child } from "../../types";
 import { useFamily } from "../../utils/family";
 import { useChildData } from "../../utils/useChildData";
 import { usePhotoUrls } from "../../utils/usePhotoUrls";
-import { colors, clay, clayButton, fonts, radius, tint, TAB_BAR_SPACE, type } from "../../utils/theme";
+import { colors, ctaShadow, elevation, emoji, radius, size, soft, solid, space, tint } from "../../utils/theme";
 import { ageAtDate, formatDate, formatDateShort, pregnancyWeek } from "../../utils/dates";
 import { buildTimeline, formatMeasurement, momentColor, momentEmoji, momentTitle, TimelineItem } from "../../utils/moments";
-import { Header, Screen } from "../../components/ui/Screen";
+import { Header, Screen, useTabBarSpace } from "../../components/ui/Screen";
 import { ClayButton, Squish } from "../../components/ui/Clay";
+import { T } from "../../components/ui/T";
 import { MomentPicture } from "../../components/MomentBits";
+
+/** Feste Slot-Höhen: Texte im Pfad dürfen nur begrenzt mitwachsen */
+const NODE_FONT_SCALE = 1.2;
 
 const HEIGHTS: Record<TimelineItem["kind"], number> = {
   chapter: 92,
@@ -24,12 +28,13 @@ const HEIGHTS: Record<TimelineItem["kind"], number> = {
 
 export default function TimelineScreen() {
   const { active } = useFamily();
+  const bottomSpace = useTabBarSpace();
   if (!active) {
     return (
-      <Screen bottomSpace={TAB_BAR_SPACE}>
+      <Screen bottomSpace={bottomSpace}>
         <Header title="Weg" back={false} />
-        <Text style={type.body}>Lege zuerst ein Kind an — dann beginnt hier sein Weg.</Text>
-        <ClayButton label="Kind anlegen" icon="add" onPress={() => router.push("/kind/neu")} style={{ marginTop: 20 }} />
+        <T variant="body">Legt zuerst ein Kind an — dann beginnt hier sein Weg.</T>
+        <ClayButton label="Kind anlegen" icon="add" onPress={() => router.push("/kind/neu")} style={{ marginTop: space.gutter }} />
       </Screen>
     );
   }
@@ -42,8 +47,9 @@ function Timeline({ child }: { child: Child }) {
   const scrollRef = useRef<ScrollView>(null);
   const didScroll = useRef(false);
   const urls = usePhotoUrls(moments.map((m) => m.photos[0]));
+  const bottomSpace = useTabBarSpace();
 
-  const W = Math.min(width, 520) - 40; // Inhaltbreite (20px Rand je Seite)
+  const W = Math.min(width, 520) - 2 * space.gutter; // Inhaltsbreite (Seitenrand je Seite)
   const items = useMemo(() => buildTimeline(child, moments, growth), [child, moments, growth]);
 
   // Positionen: Knoten abwechselnd links/rechts, Kapitel mittig
@@ -85,7 +91,7 @@ function Timeline({ child }: { child: Child }) {
 
   return (
     <Screen
-      bottomSpace={TAB_BAR_SPACE}
+      bottomSpace={bottomSpace}
       scrollRef={scrollRef}
       contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}
     >
@@ -93,12 +99,6 @@ function Timeline({ child }: { child: Child }) {
         title={`${child.name}s Weg`}
         subtitle={subtitle}
         back={false}
-        right={
-          <Squish onPress={() => router.push("/(tabs)/buch")} accessibilityRole="button" accessibilityLabel="Buch" style={[styles.bookBtn, clayButton(colors.sun)]}>
-            <Ionicons name="book" size={18} color={colors.ink} />
-            <Text style={styles.bookText}>Buch</Text>
-          </Squish>
-        }
       />
 
       <View
@@ -143,11 +143,15 @@ function Node({
   if (item.kind === "chapter") {
     return (
       <View style={[styles.chapterWrap]}>
-        <View style={[styles.chapter, clay(child.color, "soft")]}>
-          <Text style={{ fontSize: 20 }}>{item.chapter.emoji}</Text>
-          <View>
-            <Text style={styles.chapterTitle}>{item.chapter.title}</Text>
-            <Text style={styles.chapterSub}>{item.chapter.subtitle}</Text>
+        <View style={[styles.chapter, elevation.raised]} accessible accessibilityRole="header" accessibilityLabel={`${item.chapter.title}, ${item.chapter.subtitle}`}>
+          <Text style={emoji(20)}>{item.chapter.emoji}</Text>
+          <View style={{ flexShrink: 1 }}>
+            <T variant="h3" numberOfLines={1} maxFontSizeMultiplier={NODE_FONT_SCALE}>
+              {item.chapter.title}
+            </T>
+            <T variant="caption" numberOfLines={1} maxFontSizeMultiplier={NODE_FONT_SCALE}>
+              {item.chapter.subtitle}
+            </T>
           </View>
         </View>
       </View>
@@ -155,23 +159,31 @@ function Node({
   }
 
   const bubble = item.kind === "moment" ? 88 : item.kind === "growth" ? 62 : 76;
-  const labelWidth = W - (left ? x + bubble / 2 + 14 : W - x + bubble / 2 + 14);
+  const gap = space.sm;
+  const labelWidth = W - (left ? x + bubble / 2 + gap : W - x + bubble / 2 + gap);
   const bubbleStyle = { position: "absolute" as const, left: x - bubble / 2, top: (pos.height - bubble) / 2 };
-  const labelStyle = left
-    ? { position: "absolute" as const, left: x + bubble / 2 + 14, width: labelWidth, top: 0, bottom: 0, justifyContent: "center" as const }
-    : { position: "absolute" as const, right: W - x + bubble / 2 + 14, width: labelWidth, top: 0, bottom: 0, justifyContent: "center" as const, alignItems: "flex-end" as const };
+  const labelStyle = {
+    position: "absolute" as const,
+    width: labelWidth,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center" as const,
+    // Titel, Wachstums-Etikett und Meta-Zeile hängen immer an derselben Seite
+    alignItems: left ? ("flex-start" as const) : ("flex-end" as const),
+    ...(left ? { left: x + bubble / 2 + gap } : { right: W - x + bubble / 2 + gap }),
+  };
   const align = left ? ("left" as const) : ("right" as const);
 
   if (item.kind === "start") {
     const isBaby = child.kind === "baby";
     return (
       <>
-        <View style={[bubbleStyle, styles.round, { width: bubble, height: bubble, backgroundColor: colors.sun }, clayButton(colors.sun)]}>
-          <Ionicons name={isBaby ? "heart" : "sparkles"} size={32} color={colors.onAccent} />
+        <View style={[bubbleStyle, styles.round, styles.ringed, { width: bubble, height: bubble, backgroundColor: colors.sunSoft }, elevation.raised]}>
+          <Ionicons name={isBaby ? "heart" : "sparkles"} size={size.icon.lg} color={colors.sunDeep} />
         </View>
         <View style={labelStyle}>
-          <Text style={[styles.nodeTitle, { textAlign: align }]}>{isBaby ? "Hallo Welt!" : "Wir erwarten dich"}</Text>
-          <Text style={[styles.nodeSub, { textAlign: align }]}>{formatDate(item.dateISO)}</Text>
+          <NodeTitle align={align}>{isBaby ? "Hallo Welt!" : "Wir erwarten dich"}</NodeTitle>
+          <NodeSub align={align}>{formatDate(item.dateISO)}</NodeSub>
         </View>
       </>
     );
@@ -188,13 +200,14 @@ function Node({
           onPress={() => router.push(`/moment/neu?child=${child.id}`)}
           accessibilityRole="button"
           accessibilityLabel="Neuen Moment festhalten"
-          style={[bubbleStyle, styles.round, { width: bubble, height: bubble, backgroundColor: child.color }, clayButton(child.color)]}
+          haptic
+          style={[bubbleStyle, styles.round, { width: bubble, height: bubble, backgroundColor: solid(child.color) }, ctaShadow(child.color)]}
         >
-          <Ionicons name="add" size={36} color={colors.onAccent} />
+          <Ionicons name="add" size={size.icon.lg + space.xs} color={colors.onAccent} />
         </Squish>
         <View style={labelStyle}>
-          <Text style={[styles.nodeTitle, { textAlign: align }]}>Heute</Text>
-          <Text style={[styles.nodeSub, { textAlign: align }]}>{sub}</Text>
+          <NodeTitle align={align}>Heute</NodeTitle>
+          <NodeSub align={align}>{sub}</NodeSub>
         </View>
       </>
     );
@@ -208,18 +221,20 @@ function Node({
           onPress={() => router.push(`/messung?child=${child.id}&id=${g.id}`)}
           accessibilityRole="button"
           accessibilityLabel={`Messung ${formatMeasurement(g)}`}
-          style={[bubbleStyle, styles.round, styles.growthBubble, { width: bubble, height: bubble }, clay(colors.sky, "soft")]}
+          style={[bubbleStyle, styles.round, styles.ringed, { width: bubble, height: bubble, backgroundColor: colors.skySoft }, elevation.raised]}
         >
-          <Ionicons name="resize" size={24} color={colors.sky} />
+          <Ionicons name="resize" size={size.icon.md} color={solid(colors.sky)} />
         </Squish>
         <View style={labelStyle}>
-          <View style={[styles.growthTag, clay(colors.sky, "soft")]}>
-            <Text style={styles.growthText}>{formatMeasurement(g)}</Text>
+          <View style={styles.growthTag}>
+            <T variant="chip" color={solid(colors.sky)} numberOfLines={1} maxFontSizeMultiplier={NODE_FONT_SCALE}>
+              {formatMeasurement(g)}
+            </T>
           </View>
-          <Text style={[styles.nodeSub, { textAlign: align, marginTop: 6 }]}>
+          <NodeSub align={align} style={{ marginTop: space.xs }}>
             {g.note ? `${g.note} · ` : ""}
             {formatDateShort(g.measuredOn)}
-          </Text>
+          </NodeSub>
         </View>
       </>
     );
@@ -236,67 +251,79 @@ function Node({
         accessibilityLabel={momentTitle(m)}
         style={[bubbleStyle, { width: bubble, height: bubble, transform: [{ rotate: `${tilt}deg` }] }]}
       >
-        <View style={[styles.photoBubble, clay(momentColor(m), "normal")]}>
-          <MomentPicture photo={photo} emoji={momentEmoji(m)} color={momentColor(m)} style={styles.photoInner} emojiSize={34} />
+        <View style={[styles.photoBubble, elevation.raised]}>
+          <MomentPicture photo={photo} emoji={momentEmoji(m)} color={momentColor(m)} style={styles.photoInner} emojiSize={32} label={momentTitle(m)} />
         </View>
         {photo ? (
-          <View style={[styles.emojiBadge, { backgroundColor: momentColor(m) }]}>
-            <Text style={{ fontSize: 14 }}>{momentEmoji(m)}</Text>
+          <View style={[styles.emojiBadge, { backgroundColor: soft(momentColor(m)) }]}>
+            <Text style={emoji(16)} accessibilityElementsHidden importantForAccessibility="no">
+              {momentEmoji(m)}
+            </Text>
           </View>
         ) : null}
       </Squish>
       <View style={labelStyle}>
-        <Text style={[styles.nodeTitle, { textAlign: align }]} numberOfLines={2}>
+        <NodeTitle align={align} lines={2}>
           {momentTitle(m)}
-        </Text>
-        <Text style={[styles.nodeSub, { textAlign: align }]}>
+        </NodeTitle>
+        <NodeSub align={align}>
           {birth ? ageAtDate(birth, m.happenedOn) : `SSW ${pregnancyWeek((child.profile as { dueDate: string }).dueDate, m.happenedOn).week}`}
-        </Text>
+        </NodeSub>
       </View>
     </>
   );
 }
 
+function NodeTitle({ children, align, lines }: { children: React.ReactNode; align: "left" | "right"; lines?: number }) {
+  return (
+    <T variant="h3" align={align} numberOfLines={lines} maxFontSizeMultiplier={NODE_FONT_SCALE}>
+      {children}
+    </T>
+  );
+}
+
+function NodeSub({ children, align, style }: { children: React.ReactNode; align: "left" | "right"; style?: object }) {
+  return (
+    <T variant="caption" color={colors.inkSoft} align={align} numberOfLines={2} maxFontSizeMultiplier={NODE_FONT_SCALE} style={[{ marginTop: space.xxs / 2 }, style]}>
+      {children}
+    </T>
+  );
+}
+
 const styles = StyleSheet.create({
-  bookBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 16,
-    backgroundColor: colors.sun,
-  },
-  bookText: { fontFamily: fonts.display, fontSize: 15, color: colors.ink },
   slot: { position: "absolute", left: 0, right: 0 },
-  round: { borderRadius: 999, alignItems: "center", justifyContent: "center" },
-  chapterWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
+  round: { borderRadius: radius.pill, alignItems: "center", justifyContent: "center" },
+  ringed: { borderWidth: space.xxs, borderColor: colors.surface },
+  chapterWrap: { flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: space.md },
   chapter: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: space.sm,
+    maxWidth: "100%",
     backgroundColor: colors.surface,
     borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingLeft: 14,
-    paddingRight: 18,
+    paddingVertical: space.xs,
+    paddingLeft: space.md,
+    paddingRight: space.gutter,
   },
-  chapterTitle: { fontFamily: fonts.display, fontSize: 15, color: colors.ink },
-  chapterSub: { fontFamily: fonts.bodyBold, fontSize: 12, color: colors.muted },
-  nodeTitle: { fontFamily: fonts.display, fontSize: 17, lineHeight: 21, color: colors.ink },
-  nodeSub: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: colors.inkSoft, marginTop: 2 },
-  growthBubble: { backgroundColor: colors.skySoft, borderWidth: 4, borderColor: colors.surface },
-  growthTag: { backgroundColor: colors.surface, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
-  growthText: { fontFamily: fonts.display, fontSize: 14, color: colors.skyDeep },
-  photoBubble: { flex: 1, borderRadius: 30, borderWidth: 5, borderColor: colors.surface, backgroundColor: colors.surface, overflow: "hidden" },
-  photoInner: { flex: 1, borderRadius: 24 },
+  growthTag: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.line,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xxs + 2,
+    maxWidth: "100%",
+  },
+  photoBubble: { flex: 1, borderRadius: radius.lg, borderWidth: space.xxs + 1, borderColor: colors.surface, backgroundColor: colors.surface, overflow: "hidden" },
+  photoInner: { flex: 1, borderRadius: radius.md + space.xxs - 1 },
   emojiBadge: {
     position: "absolute",
-    right: -8,
-    top: -8,
+    right: -space.xs,
+    top: -space.xs,
     width: 30,
     height: 30,
-    borderRadius: 15,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Text, View } from "react-native";
-import { colors, clayButton, fonts } from "../../utils/theme";
+import { colors, ctaShadow, fonts, solid } from "../../utils/theme";
 
 export function MiaMark({ size = 72 }: { size?: number }) {
   const r = (f: number) => Math.round(size * f);
@@ -12,7 +12,7 @@ export function MiaMark({ size = 72 }: { size?: number }) {
         {
           width: size,
           height: size,
-          backgroundColor: colors.coral,
+          backgroundColor: solid(colors.coral),
           alignItems: "center",
           justifyContent: "center",
           borderTopLeftRadius: r(0.46),
@@ -20,12 +20,15 @@ export function MiaMark({ size = 72 }: { size?: number }) {
           borderBottomRightRadius: r(0.44),
           borderBottomLeftRadius: r(0.56),
         },
-        clayButton(colors.coral),
+        ctaShadow(colors.coral),
       ]}
       accessibilityRole="image"
       accessibilityLabel="Mia"
     >
-      <Text style={{ fontFamily: fonts.displayBold, fontSize: size * 0.36, color: colors.onAccent, marginTop: -size * 0.03 }}>
+      <Text
+        allowFontScaling={false}
+        style={{ fontFamily: fonts.displayBold, fontSize: size * 0.36, color: colors.onAccent, marginTop: -size * 0.03 }}
+      >
         mia
       </Text>
       <View

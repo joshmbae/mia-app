@@ -12,10 +12,12 @@ import { findMilestone, momentColor, momentEmoji, momentTitle } from "../../util
 import { CATEGORY_LABELS } from "../../utils/milestoneData";
 import { ageAtDate, formatDate, pregnancyWeek } from "../../utils/dates";
 import { celebrate } from "../../utils/haptics";
-import { colors, clay, fonts, radius, tint, type } from "../../utils/theme";
+import { colors, elevation, emoji, radius, size, soft, solid, space } from "../../utils/theme";
+import { announce } from "../../utils/a11y";
 import { Header, Screen } from "../../components/ui/Screen";
 import { ClayButton, ClayCard, IconButton, Pill } from "../../components/ui/Clay";
 import { Confetti } from "../../components/Confetti";
+import { T } from "../../components/ui/T";
 
 export default function MomentDetailScreen() {
   const params = useLocalSearchParams<{ id: string; child?: string; neu?: string }>();
@@ -34,13 +36,16 @@ export default function MomentDetailScreen() {
   );
 
   useEffect(() => {
-    if (party) celebrate();
+    if (party) {
+      celebrate();
+      announce("Moment gespeichert");
+    }
   }, []);
 
   if (!child || moment === undefined) {
     return (
       <Screen>
-        <ActivityIndicator color={colors.coral} style={{ marginTop: 80 }} />
+        <ActivityIndicator color={colors.coral} style={{ marginTop: space.xxl }} />
       </Screen>
     );
   }
@@ -49,14 +54,16 @@ export default function MomentDetailScreen() {
     return (
       <Screen>
         <Header title="Nicht gefunden" />
-        <Text style={type.body}>Diesen Moment gibt es nicht mehr.</Text>
+        <T variant="body">Diesen Moment gibt es nicht mehr.</T>
       </Screen>
     );
   }
 
   const color = momentColor(moment);
   const milestone = findMilestone(moment.milestoneId);
-  const slideWidth = Math.min(width, 560) - 40;
+  const slideWidth = Math.min(width, 560) - 2 * space.gutter;
+  const title = momentTitle(moment);
+  const count = moment.photos.length;
   const age =
     child.kind === "baby"
       ? ageAtDate(child.profile.birthDate, moment.happenedOn)
@@ -79,49 +86,70 @@ export default function MomentDetailScreen() {
         />
 
         {moment.photos.length > 0 ? (
-          <View style={[styles.gallery, clay(color, "normal")]}>
+          <View style={[styles.gallery, elevation.float]}>
             <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} onScroll={onScroll} scrollEventThrottle={32}>
-              {moment.photos.map((ref) => (
-                <View key={ref} style={{ width: slideWidth - 16, height: slideWidth - 16, marginRight: 0 }}>
+              {moment.photos.map((ref, i) => (
+                <View key={ref} style={{ width: slideWidth - 16, height: slideWidth - 16 }}>
                   {urls[ref] ? (
-                    <Image source={{ uri: urls[ref] }} style={styles.photo} accessibilityLabel={momentTitle(moment)} />
+                    <Image
+                      source={{ uri: urls[ref] }}
+                      style={styles.photo}
+                      accessible
+                      accessibilityRole="image"
+                      accessibilityLabel={count > 1 ? `Foto ${i + 1} von ${count} – ${title}` : `Foto – ${title}`}
+                    />
                   ) : (
-                    <View style={[styles.photo, { backgroundColor: tint(color, 0.15) }]} />
+                    <View style={[styles.photo, { backgroundColor: soft(color) }]} />
                   )}
                 </View>
               ))}
             </ScrollView>
-            {moment.photos.length > 1 && (
-              <View style={styles.dots}>
+            {count > 1 && (
+              <View style={styles.dots} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                 {moment.photos.map((_, i) => (
-                  <View key={i} style={[styles.dot, i === page && { backgroundColor: color, width: 18 }]} />
+                  <View key={i} style={[styles.dot, i === page && { backgroundColor: solid(color), width: space.md + 2 }]} />
                 ))}
               </View>
             )}
           </View>
         ) : (
-          <View style={[styles.sticker, { backgroundColor: tint(color, 0.16) }]}>
-            <Text style={{ fontSize: 96 }}>{momentEmoji(moment)}</Text>
+          <View style={[styles.sticker, { backgroundColor: soft(color) }]}>
+            <Text style={emoji(96)} accessibilityElementsHidden importantForAccessibility="no">
+              {momentEmoji(moment)}
+            </Text>
           </View>
         )}
 
         <View style={styles.meta}>
-          <Pill label={`${momentEmoji(moment)}  ${age}`} color={color} background={tint(color, 0.14)} />
-          <Text style={[type.hero, { fontSize: 34, lineHeight: 40 }]}>{momentTitle(moment)}</Text>
-          <Text style={styles.date}>
+          <Pill label={`${momentEmoji(moment)}  ${age}`} color={color} background={soft(color)} />
+          <T variant="title" accessibilityRole="header">
+            {title}
+          </T>
+          <T variant="body">
             {formatDate(moment.happenedOn)}
             {milestone ? ` · ${CATEGORY_LABELS[milestone.category]}` : ""}
-          </Text>
+          </T>
         </View>
 
         {moment.note ? (
           <ClayCard style={styles.note}>
-            <Ionicons name="chatbubble-ellipses" size={20} color={tint(color, 0.7)} style={{ marginBottom: 6 }} />
-            <Text style={styles.noteText}>{moment.note}</Text>
+            <Ionicons name="chatbubble-ellipses" size={size.icon.md} color={color} style={{ marginBottom: space.xs }} />
+            <T variant="bodyLong" color={colors.ink}>
+              {moment.note}
+            </T>
           </ClayCard>
         ) : (
-          <ClayCard color={colors.surfaceSoft} strength="soft" onPress={() => router.push(`/moment/bearbeiten?child=${child.id}&entry=${moment.id}`)} accessibilityLabel="Notiz hinzufügen">
-            <Text style={type.body}>Noch keine Notiz — was möchtest du über diesen Moment nie vergessen?</Text>
+          <ClayCard
+            color={colors.surfaceSoft}
+            lift="flat"
+            style={styles.emptyNote}
+            onPress={() => router.push(`/moment/bearbeiten?child=${child.id}&entry=${moment.id}`)}
+            accessibilityLabel="Notiz hinzufügen"
+          >
+            <Ionicons name="create-outline" size={size.icon.md} color={solid(color)} />
+            <T variant="body" style={{ flex: 1 }}>
+              Noch keine Notiz — was möchtet ihr über diesen Moment nie vergessen?
+            </T>
           </ClayCard>
         )}
 
@@ -131,7 +159,7 @@ export default function MomentDetailScreen() {
           variant="soft"
           color={color}
           onPress={() => router.navigate("/(tabs)/zeitstrahl")}
-          style={{ marginTop: 22 }}
+          style={{ marginTop: space.lg }}
         />
       </Screen>
       {party && <Confetti onDone={() => setParty(false)} />}
@@ -140,13 +168,12 @@ export default function MomentDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  gallery: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: 8, overflow: "hidden" },
+  gallery: { backgroundColor: colors.surface, borderRadius: radius.xl, padding: space.xs, overflow: "hidden" },
   photo: { width: "100%", height: "100%", borderRadius: radius.lg },
-  dots: { flexDirection: "row", justifyContent: "center", gap: 6, paddingTop: 10, paddingBottom: 2 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.line },
+  dots: { flexDirection: "row", justifyContent: "center", gap: space.xxs + 2, paddingTop: space.sm, paddingBottom: space.xxs },
+  dot: { width: space.xs, height: space.xs, borderRadius: radius.pill, backgroundColor: colors.line },
   sticker: { height: 240, borderRadius: radius.xl, alignItems: "center", justifyContent: "center" },
-  meta: { gap: 8, marginTop: 22, marginBottom: 18 },
-  date: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.inkSoft },
-  note: { paddingVertical: 18 },
-  noteText: { fontFamily: fonts.body, fontSize: 17, lineHeight: 26, color: colors.ink },
+  meta: { gap: space.xs, marginTop: space.lg, marginBottom: space.md },
+  note: { paddingVertical: space.md + 2 },
+  emptyNote: { flexDirection: "row", alignItems: "center", gap: space.sm, borderWidth: 2, borderColor: colors.line },
 });

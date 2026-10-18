@@ -4,7 +4,7 @@ import { Redirect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../utils/supabase";
 import { useFamily } from "../utils/family";
-import { colors } from "../utils/theme";
+import { colors, space } from "../utils/theme";
 import { MiaMark } from "../components/ui/MiaMark";
 
 type Target = "login" | "onboarding" | "app";
@@ -32,9 +32,9 @@ export default function Index() {
   if (target === "app") return <Redirect href="/(tabs)/start" />;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", gap: 24 }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", gap: space.lg }}>
       <MiaMark size={88} />
-      <ActivityIndicator color={colors.coral} />
+      <ActivityIndicator color={colors.coralDeep} accessibilityLabel="Mia lädt" />
     </View>
   );
 }

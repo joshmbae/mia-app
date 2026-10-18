@@ -6,7 +6,7 @@ import { colors } from "../utils/theme";
 import { useReduceMotion } from "../utils/a11y";
 
 const PIECES = 28;
-const PALETTE = [colors.coral, colors.sun, colors.sky, colors.mint, colors.lilac, "#E8789A"];
+const PALETTE = [colors.coral, colors.sun, colors.sky, colors.mint, colors.lilac, colors.pink];
 
 export function Confetti({ onDone }: { onDone?: () => void }) {
   const reduceMotion = useReduceMotion();

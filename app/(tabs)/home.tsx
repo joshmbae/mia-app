@@ -10,10 +10,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { BabyProfile, PregnancyProfile, FeedingLog, SleepLog } from "../../types";
-import { loadProfiles, loadPregnancyProfiles, createSession, loadMilestoneProgress, loadFeedingLogs, loadSleepLogs } from "../../utils/storage";
-import { getCurrentPhase, getAgeWeeks, getPhaseBadgeNumber } from "../../utils/developmentPhases";
-import { MILESTONES, getActiveMilestones } from "../../utils/milestoneData";
+import { BabyProfile, PregnancyProfile, FeedingLog, SleepLog, MomentEntry } from "../../types";
+import { loadProfiles, loadPregnancyProfiles, createSession, loadMoments, loadFeedingLogs, loadSleepLogs } from "../../utils/storage";
+import { getCurrentPhase } from "../../utils/developmentPhases";
+import { momentEmoji, momentTitle } from "../../utils/moments";
 import { getPregnancyBlock } from "../../utils/pregnancyDevelopmentContent";
 import { formatRelativeTime } from "../../utils/formatRelativeTime";
 import MiaLogo from "../../components/MiaLogo";
@@ -61,24 +61,16 @@ function getMiaPrompt(profiles: BabyProfile[], pregnancies: PregnancyProfile[]):
 // ─── Baby Card ────────────────────────────────────────────────────────────────
 
 function BabyCard({
-  profile, achievedIds, activity, showPhaseTip, onChat,
+  profile, moments, activity, showPhaseTip, onChat,
 }: {
   profile: BabyProfile;
-  achievedIds: Set<string>;
+  moments: MomentEntry[];
   activity?: { lastFeeding?: FeedingLog; lastSleep?: SleepLog };
   showPhaseTip: boolean;
   onChat: () => void;
 }) {
   const phase = getCurrentPhase(profile.birthDate);
-  const ageWeeks = getAgeWeeks(profile.birthDate);
-
-  // Aktive Meilensteine der aktuellen Phase
-  const active = getActiveMilestones(ageWeeks);
-  const achieved = active.filter((m) => achievedIds.has(m.id)).length;
-  const total = active.length;
-  const pct = total > 0 ? achieved / total : 0;
-
-  const badgeNum = getPhaseBadgeNumber(profile.birthDate, achievedIds, MILESTONES);
+  const latest = moments[moments.length - 1];
 
   return (
     <TouchableOpacity
@@ -94,11 +86,6 @@ function BabyCard({
           ) : (
             <View style={[styles.richAvatarPlaceholder, { backgroundColor: profile.avatarColor }]}>
               <Text style={styles.richAvatarLetter}>{profile.name.charAt(0).toUpperCase()}</Text>
-            </View>
-          )}
-          {badgeNum > 0 && (
-            <View style={styles.medalBadge}>
-              <Text style={styles.medalEmoji}>{badgeNum}</Text>
             </View>
           )}
         </View>
@@ -136,24 +123,26 @@ function BabyCard({
         </View>
       </View>
 
-      {/* Phase strip + Fortschritt */}
+      {/* Phase */}
       {phase && (
         <View style={styles.phaseStrip}>
           <View style={styles.phaseStripDot} />
           <Text style={styles.phaseStripText} numberOfLines={1}>{phase.emoji} {phase.title}</Text>
-          {total > 0 && (
-            <View style={styles.phaseProgressWrap}>
-              <View style={styles.phaseProgressTrack}>
-                <View style={[styles.phaseProgressFill, {
-                  width: `${Math.round(pct * 100)}%` as `${number}%`,
-                  backgroundColor: pct === 1 ? "#C8A96E" : "#4A7C6F",
-                }]} />
-              </View>
-              <Text style={styles.phaseProgressLabel}>{achieved}/{total}</Text>
-            </View>
-          )}
         </View>
       )}
+
+      {/* Tagebuch */}
+      <TouchableOpacity
+        style={styles.diaryStrip}
+        onPress={() => router.push(`/profile/development/${profile.id}`)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.diaryEmoji}>{latest ? momentEmoji(latest) : "📖"}</Text>
+        <Text style={styles.diaryText} numberOfLines={1}>
+          {latest ? `Zuletzt: ${momentTitle(latest)}` : "Ersten Moment festhalten"}
+        </Text>
+        <Ionicons name="chevron-forward" size={13} color="#B7862A" />
+      </TouchableOpacity>
 
       {/* Phasen-Tipp (nur bei genau einem Kind) */}
       {showPhaseTip && phase?.parentTip && (
@@ -232,28 +221,28 @@ function PregnancyCard({ preg, onChat }: { preg: PregnancyProfile; onChat: () =>
 export default function HomeScreen() {
   const [profiles, setProfiles] = useState<BabyProfile[]>([]);
   const [pregnancies, setPregnancies] = useState<PregnancyProfile[]>([]);
-  const [milestoneMap, setMilestoneMap] = useState<Record<string, Set<string>>>({});
+  const [momentMap, setMomentMap] = useState<Record<string, MomentEntry[]>>({});
   const [activityMap, setActivityMap] = useState<Record<string, { lastFeeding?: FeedingLog; lastSleep?: SleepLog }>>({});
 
   useFocusEffect(
     useCallback(() => {
       loadProfiles().then(async (loaded) => {
         setProfiles(loaded);
-        const milestones: Record<string, Set<string>> = {};
+        const momentsByProfile: Record<string, MomentEntry[]> = {};
         const activity: Record<string, { lastFeeding?: FeedingLog; lastSleep?: SleepLog }> = {};
         await Promise.all(loaded.map(async (p) => {
-          const [progress, feedingLogs, sleepLogs] = await Promise.all([
-            loadMilestoneProgress(p.id),
+          const [moments, feedingLogs, sleepLogs] = await Promise.all([
+            loadMoments(p.id),
             loadFeedingLogs(p.id),
             loadSleepLogs(p.id),
           ]);
-          milestones[p.id] = new Set(progress.filter((x) => x.status === "achieved").map((x) => x.milestoneId));
+          momentsByProfile[p.id] = moments;
           activity[p.id] = {
             lastFeeding: [...feedingLogs].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0],
             lastSleep: [...sleepLogs].sort((a, b) => (b.endedAt ?? b.startedAt).localeCompare(a.endedAt ?? a.startedAt))[0],
           };
         }));
-        setMilestoneMap(milestones);
+        setMomentMap(momentsByProfile);
         setActivityMap(activity);
       });
       loadPregnancyProfiles().then(setPregnancies);
@@ -357,7 +346,7 @@ export default function HomeScreen() {
               <BabyCard
                 key={profile.id}
                 profile={profile}
-                achievedIds={milestoneMap[profile.id] ?? new Set()}
+                moments={momentMap[profile.id] ?? []}
                 activity={activityMap[profile.id]}
                 showPhaseTip={profiles.length === 1}
                 onChat={() => startChildChat(profile.id)}
@@ -511,21 +500,11 @@ const styles = StyleSheet.create({
   },
   addLinkText: { fontSize: 13, fontWeight: "600", color: "#4A7C6F" },
 
-  medalBadge: {
-    position: "absolute", bottom: -2, right: -2,
-    backgroundColor: "#4A7C6F", borderRadius: 10,
-    minWidth: 20, height: 20, paddingHorizontal: 4,
-    alignItems: "center", justifyContent: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+  diaryStrip: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#FFF3D6", borderRadius: 10,
+    paddingHorizontal: 10, paddingVertical: 7,
   },
-  medalEmoji: { fontSize: 11, fontWeight: "800", color: "#FFFFFF", lineHeight: 14 },
-
-  phaseProgressWrap: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-  },
-  phaseProgressTrack: {
-    width: 48, height: 4, borderRadius: 2, backgroundColor: "#E5DDD5", overflow: "hidden",
-  },
-  phaseProgressFill: { height: 4, borderRadius: 2 },
-  phaseProgressLabel: { fontSize: 11, color: "#7A7269", fontWeight: "600" },
+  diaryEmoji: { fontSize: 13 },
+  diaryText: { flex: 1, fontSize: 13, fontWeight: "700", color: "#7A5A10" },
 });

@@ -24,11 +24,11 @@ import {
   deleteSession,
   loadMemories,
   saveMemories,
-  loadMilestoneProgress,
+  loadMoments,
 } from "../../utils/storage";
-import { getActiveMilestones, MILESTONES } from "../../utils/milestoneData";
-import { MilestoneProgress } from "../../types";
-import { getCurrentPhase, getAgeWeeks, getPhaseBadgeNumber } from "../../utils/developmentPhases";
+import { MomentEntry } from "../../types";
+import { getCurrentPhase } from "../../utils/developmentPhases";
+import { momentEmoji } from "../../utils/moments";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<BabyProfile | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [memories, setMemories] = useState<Memory[]>([]);
-  const [milestoneProgress, setMilestoneProgress] = useState<MilestoneProgress[]>([]);
+  const [moments, setMoments] = useState<MomentEntry[]>([]);
   const [newMemoryText, setNewMemoryText] = useState("");
   const [newMemoryCategory, setNewMemoryCategory] = useState<Memory["category"]>("general");
   const [showAddMemory, setShowAddMemory] = useState(false);
@@ -104,8 +104,7 @@ export default function ProfileScreen() {
         setSessions(sess);
         const mems = await loadMemories(id);
         setMemories(mems);
-        const mp = await loadMilestoneProgress(id);
-        setMilestoneProgress(mp);
+        setMoments(await loadMoments(id));
       }
       load();
     }, [id])
@@ -202,22 +201,14 @@ export default function ProfileScreen() {
             keyboardShouldPersistTaps="handled"
           >
 
-            {/* ── 1. Entwicklung ── */}
+            {/* ── 1. Tagebuch ── */}
             {(() => {
-              const ageWeeks = getAgeWeeks(profile.birthDate);
               const currentPhase = getCurrentPhase(profile.birthDate);
-              const active = getActiveMilestones(ageWeeks);
-              const activeIds = new Set(active.map((m) => m.id));
-              const achieved = milestoneProgress.filter(
-                (p) => p.status === "achieved" && activeIds.has(p.milestoneId)
-              ).length;
-              const totalRelevant = active.length;
-              const achievedAllIds = new Set(milestoneProgress.filter((p) => p.status === "achieved").map((p) => p.milestoneId));
-              const badgeNum = getPhaseBadgeNumber(profile.birthDate, achievedAllIds, MILESTONES);
+              const recent = moments.slice(-5).reverse();
               return (
                 <>
                   <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>🌱 Entwicklung</Text>
+                    <Text style={styles.sectionTitle}>📖 Tagebuch</Text>
                   </View>
                   <TouchableOpacity
                     style={styles.devCard}
@@ -225,9 +216,6 @@ export default function ProfileScreen() {
                     activeOpacity={0.85}
                   >
                     <View style={styles.devCardTop}>
-                      <View style={styles.devCardBadge}>
-                        <Text style={styles.devCardBadgeText}>Woche {ageWeeks}</Text>
-                      </View>
                       {currentPhase && (
                         <View style={[styles.devCardPhaseBadge, { backgroundColor: "#EAF2EF" }]}>
                           <Text style={[styles.devCardPhaseText, { color: "#4A7C6F" }]}>
@@ -235,23 +223,28 @@ export default function ProfileScreen() {
                           </Text>
                         </View>
                       )}
-                      {badgeNum > 0 && (
-                        <View style={styles.phaseBadgeChip}>
-                          <Text style={styles.phaseBadgeChipText}>⭐ {badgeNum}</Text>
-                        </View>
-                      )}
-                      <Ionicons name="chevron-forward" size={16} color="#4A7C6F" />
+                      <Ionicons name="chevron-forward" size={16} color="#4A7C6F" style={{ marginLeft: "auto" }} />
                     </View>
-                    <Text style={styles.devCardTitle}>{currentPhase?.title ?? "Entwicklung ansehen"}</Text>
+                    <Text style={styles.devCardTitle}>
+                      {moments.length > 0 ? `${moments.length} ${moments.length === 1 ? "Moment" : "Momente"} festgehalten` : "Eure Geschichte beginnt hier"}
+                    </Text>
                     <Text style={styles.devCardSummary} numberOfLines={2}>
-                      {currentPhase?.summary ?? "Öffne den Entwicklungsbereich für dein Kind."}
+                      {moments.length > 0
+                        ? "Zeitstrahl, Fotos und Notizen — und am Ende vielleicht ein Buch."
+                        : "Halte besondere Momente mit Foto und ein paar Zeilen fest."}
                     </Text>
                     <View style={styles.devCardFooter}>
-                      <View style={styles.devCardProgressPill}>
-                        <Text style={styles.devCardProgressText}>
-                          {achieved} von {totalRelevant} Meilensteinen erreicht
-                        </Text>
-                      </View>
+                      {recent.length > 0 ? (
+                        recent.map((m) => (
+                          <View key={m.id} style={styles.devCardSticker}>
+                            <Text style={{ fontSize: 16 }}>{momentEmoji(m)}</Text>
+                          </View>
+                        ))
+                      ) : (
+                        <View style={styles.devCardProgressPill}>
+                          <Text style={styles.devCardProgressText}>＋ Moment festhalten</Text>
+                        </View>
+                      )}
                     </View>
                   </TouchableOpacity>
                 </>
@@ -581,7 +574,11 @@ const styles = StyleSheet.create({
   devCardBadgeText: { fontSize: 12, fontWeight: "700", color: "#4A7C6F" },
   devCardTitle: { fontSize: 17, fontWeight: "800", color: "#2D2A26", marginBottom: 6 },
   devCardSummary: { fontSize: 13, color: "#4A6B62", lineHeight: 19, marginBottom: 12 },
-  devCardFooter: { flexDirection: "row" },
+  devCardFooter: { flexDirection: "row", gap: 6 },
+  devCardSticker: {
+    width: 34, height: 34, borderRadius: 12, backgroundColor: "#FFFFFF",
+    alignItems: "center", justifyContent: "center",
+  },
   devCardProgressPill: {
     backgroundColor: "#4A7C6F",
     borderRadius: 20,

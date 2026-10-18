@@ -13,9 +13,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
 import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, Memory, FeedingLog, SleepLog } from "../../types";
-import { loadProfiles, loadParentProfiles, loadPregnancyProfiles, loadMessages, saveMessages, loadMemories, saveMemories, updateSessionPreview, loadFeedingLogs, loadSleepLogs, loadMilestoneProgress } from "../../utils/storage";
+import { loadProfiles, loadParentProfiles, loadPregnancyProfiles, loadMessages, saveMessages, loadMemories, saveMemories, updateSessionPreview, loadFeedingLogs, loadSleepLogs, loadMoments } from "../../utils/storage";
 import { supabase } from "../../utils/supabase";
-import { MILESTONES } from "../../utils/milestoneData";
+import { momentTitle } from "../../utils/moments";
 import SuggestionChips from "../../components/SuggestionChips";
 import { CHAT_ENABLED } from "../../utils/config";
 import ChatComingSoon from "../../components/ChatComingSoon";
@@ -40,7 +40,6 @@ function ChatScreenInner() {
   const [recentFeedings, setRecentFeedings] = useState<FeedingLog[]>([]);
   const [recentSleeps, setRecentSleeps] = useState<SleepLog[]>([]);
   const [achievedMilestones, setAchievedMilestones] = useState<string[]>([]);
-  const [tryingMilestones, setTryingMilestones] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -106,15 +105,10 @@ function ChatScreenInner() {
         ]);
         setRecentFeedings(fl.filter((f) => new Date(f.startedAt).getTime() > cutoff));
         setRecentSleeps(sl.filter((s) => new Date(s.startedAt).getTime() > cutoff));
-        const mp = await loadMilestoneProgress(resolvedBabyId);
-        setAchievedMilestones(
-          mp.filter((p) => p.status === "achieved")
-            .map((p) => MILESTONES.find((m) => m.id === p.milestoneId)?.title ?? p.milestoneId)
-        );
-        setTryingMilestones(
-          mp.filter((p) => p.status === "trying")
-            .map((p) => MILESTONES.find((m) => m.id === p.milestoneId)?.title ?? p.milestoneId)
-        );
+        // Festgehaltene Tagebuch-Momente geben Mia Kontext (das Backend erwartet
+        // weiterhin achievedMilestones/tryingMilestones; "übt gerade" gibt es nicht mehr)
+        const moments = await loadMoments(resolvedBabyId);
+        setAchievedMilestones(moments.map(momentTitle));
         const mems = await loadMemories(resolvedBabyId);
         setMemories(mems);
 
@@ -171,7 +165,7 @@ function ChatScreenInner() {
           "Content-Type": "application/json",
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
         },
-        body: JSON.stringify({ messages: withUser, profile, pregnancyProfile, memories, parents, parentMemories, recentFeedings, recentSleeps, achievedMilestones, tryingMilestones }),
+        body: JSON.stringify({ messages: withUser, profile, pregnancyProfile, memories, parents, parentMemories, recentFeedings, recentSleeps, achievedMilestones, tryingMilestones: [] }),
       });
 
       if (!res.ok) {

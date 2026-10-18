@@ -22,11 +22,18 @@ export interface BabyProfile {
   description?: string;
 }
 
-export type MilestoneStatus = "not_yet" | "trying" | "achieved";
-export interface MilestoneProgress {
-  milestoneId: string;
-  status: MilestoneStatus;
-  achievedAt?: string;  // ISO date
+// Ein festgehaltener Moment im Tagebuch — entweder zu einem Meilenstein aus
+// dem Katalog (milestoneId) oder ein ganz eigener Moment (ohne milestoneId).
+export interface MomentEntry {
+  id: string;
+  babyId: string;
+  milestoneId?: string;
+  title: string;
+  emoji?: string;
+  happenedOn: string;     // ISO date only: "2025-03-01"
+  note?: string;
+  photos: string[];       // "storage:<pfad>" (Supabase Storage) oder lokale URI
+  createdAt: string;
 }
 
 export interface ParentProfile {

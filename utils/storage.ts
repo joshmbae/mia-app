@@ -1,6 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import { File } from "expo-file-system";
 import { supabase } from "./supabase";
-import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, ChatSession, Memory, WeightLog, FeedingLog, SleepLog, MilestoneProgress } from "../types";
+import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, ChatSession, Memory, WeightLog, FeedingLog, SleepLog, MomentEntry } from "../types";
 
 // ─── Generic reconcile helper ─────────────────────────────────────────────────
 // Row-Level-Security already scopes every query to the logged-in user, so these
@@ -317,7 +319,10 @@ export async function deleteProfile(id: string): Promise<void> {
   await supabase.from("weight_logs").delete().eq("baby_id", id);
   await supabase.from("feeding_logs").delete().eq("baby_id", id);
   await supabase.from("sleep_logs").delete().eq("baby_id", id);
-  await supabase.from("milestone_progress").delete().eq("baby_id", id);
+  const moments = await loadMoments(id);
+  await deleteMomentPhotos(moments.flatMap((m) => m.photos));
+  await supabase.from("moment_entries").delete().eq("baby_id", id);
+  await supabase.from("milestone_progress").delete().eq("baby_id", id); // Altbestand
   // Active timer is ephemeral, device-local UI state — stays in AsyncStorage
   await AsyncStorage.removeItem(`mia_active_timer_${id}`);
 }
@@ -532,56 +537,153 @@ export async function deleteSleepLog(babyId: string, logId: string): Promise<voi
   await saveSleepLogs(babyId, logs.filter((l) => l.id !== logId));
 }
 
-// ─── Milestone Progress ───────────────────────────────────────────────────────
+// ─── Tagebuch-Momente ─────────────────────────────────────────────────────────
 
-function milestoneProgressToRow(babyId: string, p: MilestoneProgress) {
+function momentToRow(m: MomentEntry) {
   return {
-    baby_id: babyId,
-    milestone_id: p.milestoneId,
-    status: p.status,
-    achieved_at: p.achievedAt ?? null,
+    baby_id: m.babyId,
+    id: m.id,
+    milestone_id: m.milestoneId ?? null,
+    title: m.title,
+    emoji: m.emoji ?? null,
+    happened_on: m.happenedOn,
+    note: m.note ?? null,
+    photos: m.photos,
+    created_at: m.createdAt,
   };
 }
 
-function rowToMilestoneProgress(r: any): MilestoneProgress {
+function rowToMoment(r: any): MomentEntry {
   return {
-    milestoneId: r.milestone_id,
-    status: r.status,
-    achievedAt: r.achieved_at ?? undefined,
+    id: r.id,
+    babyId: r.baby_id,
+    milestoneId: r.milestone_id ?? undefined,
+    title: r.title,
+    emoji: r.emoji ?? undefined,
+    happenedOn: r.happened_on,
+    note: r.note ?? undefined,
+    photos: r.photos ?? [],
+    createdAt: r.created_at,
   };
 }
 
-export async function loadMilestoneProgress(babyId: string): Promise<MilestoneProgress[]> {
-  const { data, error } = await supabase.from("milestone_progress").select("*").eq("baby_id", babyId);
+/** Alle Momente eines Kindes, chronologisch (ältester zuerst) */
+export async function loadMoments(babyId: string): Promise<MomentEntry[]> {
+  const { data, error } = await supabase.from("moment_entries").select("*").eq("baby_id", babyId);
   if (error) throw error;
-  return (data ?? []).map(rowToMilestoneProgress);
+  return (data ?? [])
+    .map(rowToMoment)
+    .sort((a, b) => a.happenedOn.localeCompare(b.happenedOn) || a.createdAt.localeCompare(b.createdAt));
 }
 
-export async function saveMilestoneProgress(babyId: string, progress: MilestoneProgress[]): Promise<void> {
-  await reconcile(
-    "milestone_progress",
-    ["baby_id", babyId],
-    "milestone_id",
-    progress.map((p) => p.milestoneId),
-    progress.map((p) => milestoneProgressToRow(babyId, p))
-  );
+export async function saveMoment(entry: MomentEntry): Promise<void> {
+  const { error } = await supabase.from("moment_entries").upsert(momentToRow(entry));
+  if (error) throw error;
 }
 
-export async function setMilestoneStatus(
-  babyId: string,
-  milestoneId: string,
-  status: MilestoneProgress["status"]
-): Promise<MilestoneProgress[]> {
-  const existing = await loadMilestoneProgress(babyId);
-  const filtered = existing.filter((p) => p.milestoneId !== milestoneId);
-  const updated: MilestoneProgress[] = [
-    ...filtered,
-    {
-      milestoneId,
-      status,
-      achievedAt: status === "achieved" ? new Date().toISOString() : undefined,
-    },
-  ];
-  await saveMilestoneProgress(babyId, updated);
-  return updated;
+export async function deleteMoment(entry: MomentEntry): Promise<void> {
+  const { error } = await supabase
+    .from("moment_entries")
+    .delete()
+    .eq("baby_id", entry.babyId)
+    .eq("id", entry.id);
+  if (error) throw error;
+  await deleteMomentPhotos(entry.photos);
+}
+
+// ─── Moment-Fotos (Supabase Storage) ──────────────────────────────────────────
+// Fotos landen im privaten Bucket "moment-photos" unter <user_id>/<baby_id>/…,
+// damit die ganze Familie sie auf jedem Gerät sieht. Im Moment-Eintrag wird nur
+// eine Referenz "storage:<pfad>" gespeichert; angezeigt wird über signierte URLs.
+// Klappt der Upload nicht (z. B. offline), bleibt die lokale URI als Rückfall.
+
+const PHOTO_BUCKET = "moment-photos";
+const STORAGE_PREFIX = "storage:";
+const SIGNED_URL_SECONDS = 60 * 60;
+
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+async function readImageBytes(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === "web") return (await fetch(uri)).arrayBuffer();
+  const bytes = await new File(uri).bytes();
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
+/** Lädt ein lokal ausgewähltes Foto hoch und gibt die zu speichernde Referenz zurück */
+export async function uploadMomentPhoto(babyId: string, entryId: string, uri: string): Promise<string> {
+  if (uri.startsWith(STORAGE_PREFIX)) return uri;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Nicht eingeloggt");
+    const path = `${user.id}/${babyId}/${entryId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const body = await readImageBytes(uri);
+    const { error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .upload(path, body, { contentType: "image/jpeg" });
+    if (error) throw error;
+    return STORAGE_PREFIX + path;
+  } catch (err) {
+    console.warn("Foto-Upload fehlgeschlagen, nutze lokale Datei", err);
+    return uri;
+  }
+}
+
+/** Löst Foto-Referenzen in anzeigbare URLs auf (signierte URLs für Storage-Fotos) */
+export async function resolvePhotoUrls(refs: string[]): Promise<Record<string, string>> {
+  const result: Record<string, string> = {};
+  const now = Date.now();
+  const missing: string[] = [];
+  for (const ref of new Set(refs)) {
+    if (!ref.startsWith(STORAGE_PREFIX)) {
+      result[ref] = ref;
+      continue;
+    }
+    const cached = signedUrlCache.get(ref);
+    if (cached && cached.expiresAt > now + 60_000) result[ref] = cached.url;
+    else missing.push(ref);
+  }
+  if (missing.length > 0) {
+    const { data, error } = await supabase.storage
+      .from(PHOTO_BUCKET)
+      .createSignedUrls(missing.map((r) => r.slice(STORAGE_PREFIX.length)), SIGNED_URL_SECONDS);
+    if (!error && data) {
+      data.forEach((d, i) => {
+        if (!d.signedUrl) return;
+        result[missing[i]] = d.signedUrl;
+        signedUrlCache.set(missing[i], { url: d.signedUrl, expiresAt: now + SIGNED_URL_SECONDS * 1000 });
+      });
+    }
+  }
+  return result;
+}
+
+export async function deleteMomentPhotos(refs: string[]): Promise<void> {
+  const paths = refs.filter((r) => r.startsWith(STORAGE_PREFIX)).map((r) => r.slice(STORAGE_PREFIX.length));
+  if (paths.length === 0) return;
+  await supabase.storage.from(PHOTO_BUCKET).remove(paths);
+  for (const p of paths) signedUrlCache.delete(STORAGE_PREFIX + p);
+}
+
+function blobToDataUri(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** Foto als data:-URI (für den Buch-Export, der keine Netzwerk-/Datei-URLs laden kann) */
+export async function photoDataUri(ref: string): Promise<string | null> {
+  try {
+    if (ref.startsWith(STORAGE_PREFIX)) {
+      const { data, error } = await supabase.storage.from(PHOTO_BUCKET).download(ref.slice(STORAGE_PREFIX.length));
+      if (error || !data) return null;
+      return blobToDataUri(data);
+    }
+    if (Platform.OS === "web" || /^(https?|blob):/.test(ref)) return blobToDataUri(await (await fetch(ref)).blob());
+    return `data:image/jpeg;base64,${await new File(ref).base64()}`;
+  } catch {
+    return null;
+  }
 }

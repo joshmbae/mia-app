@@ -24,9 +24,7 @@ export interface DevelopmentPhase {
   emoji: string;
   summary: string;          // 2 Sätze — was ist der Kern dieser Phase
 
-  canDo: string[];          // Was das Kind jetzt kann (3–5 Punkte)
-  typical: string[];        // Typisches Verhalten inkl. Schwieriges (3–4 Punkte)
-  watchOut: string[];       // Sanfte Warnzeichen
+  typical: string[];        // Was viele Familien in dieser Zeit erleben (3–4 Punkte)
   parentTip: string;        // 1 konkreter Tipp — was Eltern jetzt tun können
   forParents: string;       // Ehrlicher Mental-Health / Erschöpfungs-Hinweis
   developmentHint?: string; // Intensive Entwicklungsphase — wann vorhanden
@@ -48,24 +46,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🌱",
     summary:
       "Dein Baby verarbeitet gerade den größten Wechsel seines Lebens — von der warmen, dunklen Gebärmutter in eine vollkommen neue Welt. Die wichtigste Aufgabe jetzt: Wärme, Nähe und regelmäßiges Trinken.",
-    canDo: [
-      "Erkennt Mamas Stimme — hat sie neun Monate gehört",
-      "Greifreflex: hält angebotene Finger fest",
-      "Schaut kurz auf Gesichter (optimale Sehweite: 20–30 cm)",
-      "Dreht Kopf in Richtung Geräusche",
-      "Moro-Reflex: breitet Arme bei lauten Geräuschen aus (normal)",
-    ],
     typical: [
       "Schläft 16–20 Stunden täglich, in kurzen Phasen — kein Durchschlafen erwarten",
       "Trinkt alle 2–3 Stunden, auch nachts",
       "Weint als einzige Kommunikation (Hunger, Nässe, Müdigkeit, Überstimulation)",
       "Verliert in den ersten Tagen bis zu 10 % des Geburtsgewichts — holt das meist bis Woche 2 auf",
-    ],
-    watchOut: [
-      "Trinkt deutlich weniger als 8× täglich nach Tag 5 — sprich mit deiner Hebamme",
-      "Uriniert kaum (weniger als 6× täglich ab Tag 4)",
-      "Gelbsucht (gelbe Haut/Augen) hält über Woche 2 hinaus an",
-      "Reagiert überhaupt nicht auf Berührung oder Stimme",
     ],
     parentTip:
       "Haut-zu-Haut-Kontakt (Känguru-Pflege) beruhigt das Baby und reguliert seinen Herzschlag und seine Temperatur. Deine Stimme ist die vertrauteste Sache der Welt für dein Kind — einfach reden reicht.",
@@ -84,23 +69,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🤍",
     summary:
       "Das Baby wird zum aktiven Gesprächspartner. Erste Vokale und Gurren entstehen — und das erste echte Lächeln kündigt sich an. Eine der aufregendsten Phasen.",
-    canDo: [
-      "Hält kurzen, echten Augenkontakt",
-      "Folgt bewegten Gesichtern mit den Augen",
-      "Erste Gurr- und Vokallaute",
-      "Beruhigt sich auf vertraute Stimmen",
-      "Zeigt erste Mimik: Stirnrunzeln, Mundwinkel heben",
-    ],
     typical: [
       "Weinpeak oft bei Woche 6 — der schwierigste Moment für viele Eltern",
       "Koliken (untröstliches Weinen über 3 Stunden) betreffen ca. 20 % der Babys",
       "Schläft noch 15–18 Stunden, aber wacher in kurzen Phasen",
       "Unterscheidet Tag und Nacht noch nicht zuverlässig",
-    ],
-    watchOut: [
-      "Kein Augenkontakt bis Woche 4 — erwähne es beim nächsten U-Termin",
-      "Trinkt unter 6× täglich",
-      "Weniger als 5 Windeln nass täglich",
     ],
     parentTip:
       "Auf jedes Gurren eingehen und antworten — Baby wartet auf Reaktion und antwortet dann. So lernt es die Grundstruktur von Dialog.",
@@ -122,22 +95,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     title: "Das erste Lächeln",
     emoji: "😊",
     summary:
-      "Das soziale Lächeln erscheint — ein echter Meilenstein (CDC: 2 Monate). Dein Baby lächelt als Reaktion auf dich, nicht zufällig. Das Gehirn macht jetzt riesige Sprünge in der sozialen Wahrnehmung.",
-    canDo: [
-      "Soziales Lächeln als Reaktion auf Gesicht oder Stimme (CDC: 2 Monate)",
-      "Hebt Kopf in Bauchlage kurz an",
-      "Folgt Gesichtern mit den Augen über 180 Grad",
-      "Erkennungsfreude bei vertrauten Personen",
-    ],
+      "Bei vielen Babys taucht jetzt irgendwann das soziale Lächeln auf — als Reaktion auf dich, nicht zufällig. Das Gehirn macht jetzt riesige Sprünge in der sozialen Wahrnehmung.",
     typical: [
       "Weinphasen noch häufig — aber das erste Lächeln verändert alles emotional",
       "Wachphasen werden etwas länger (30–60 Min am Stück)",
       "Erster sozialer Blickkontakt mit bewusstem Lächeln",
-    ],
-    watchOut: [
-      "Kein soziales Lächeln bis Woche 8 — sprich beim U3 darüber",
-      "Kein Augenkontakt möglich",
-      "Kopf wird in Bauchlage nie angehoben",
     ],
     parentTip:
       "Kontrastreiche Muster zeigen (Schwarz-Weiß, Gesichter). Auf jedes Lächeln reagieren und wiederholen — das ist Dialog-Lernen.",
@@ -156,24 +118,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🔍",
     summary:
       "Das Baby wird aktiver und deutlich wacher. Es entdeckt die eigenen Hände und führt erste 'Gespräche' mit Lauten. Die Welt ist faszinierend.",
-    canDo: [
-      "Hält Kopf in Bauchlage für mehrere Minuten stabil",
-      "Hände öffnen sich — beobachtet sie fasziniert",
-      "Lacht laut auf",
-      "Führt Laute-Gespräche: wartet auf Reaktion, antwortet dann",
-      "Dreht Kopf in Richtung Geräusche zuverlässig",
-    ],
     typical: [
       "Wachphasen werden deutlich länger (1–2 Stunden am Stück)",
       "Schlaf beginnt sich langsam zu strukturieren — aber kein Durchschlafen erwarten",
       "Weniger Weinen als in den ersten Wochen",
       "Sehr interessiert an der Umgebung",
-    ],
-    watchOut: [
-      "Kein Lachen bis 3 Monate",
-      "Keine Laute oder Reaktion auf Geräusche",
-      "Hält Kopf in Bauchlage gar nicht",
-      "Zeigt kein Interesse an Gesichtern oder Händen",
     ],
     parentTip:
       "Mobile übers Bett oder Spielbogen mit greifbaren Elementen. Bauchlage täglich 10–15 Minuten — wird später für Krabbeln wichtig.",
@@ -192,28 +141,15 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     weeksFrom: 13,
     weeksTo: 18,
     ageLabel: "Monat 3–4",
-    title: "Greifen & Drehen",
+    title: "Hände entdecken",
     emoji: "✋",
     summary:
-      "Hände und Augen beginnen zusammenzuarbeiten. Das Baby greift gezielt und dreht sich. Gleichzeitig beginnt eines der bekanntesten Phänomene: die Schlafregression um Monat 4.",
-    canDo: [
-      "Greift gezielt nach Objekten (CDC: 4 Monate)",
-      "Bringt Hände und Gegenstände zum Mund",
-      "Babbling: erste Konsonant-Vokal-Verbindungen ba, ma, da",
-      "Erkennt Eltern sicher, zeigt Freude bei Wiedersehen",
-      "Lacht ausgiebig und reagiert auf Stimmungen",
-    ],
+      "Hände und Augen beginnen zusammenzuarbeiten. Das Baby beginnt, die Welt mit den Händen zu erkunden. Gleichzeitig beginnt eines der bekanntesten Phänomene: die Schlafregression um Monat 4.",
     typical: [
       "Schläft möglicherweise plötzlich schlechter — Schlafzyklen verändern sich um Monat 4 biologisch",
       "Legt alles in den Mund (Erkunden, kein Hunger)",
       "Quengeliger abends — oft Überstimulation nach aktivem Tag",
       "Will mehr Aufmerksamkeit und Nähe",
-    ],
-    watchOut: [
-      "Greift bis 4 Monate gar nicht nach Dingen",
-      "Kein Lachen",
-      "Dreht sich bis 5 Monate noch gar nicht",
-      "Kein Interesse an den eigenen Händen",
     ],
     parentTip:
       "Greifspielzeug in Reichweite legen — nicht in die Hand geben. Das Auge-Hand-Greifen selbst zu entdecken ist der eigentliche Lernmoment.",
@@ -233,25 +169,12 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     title: "Entdecker auf dem Bauch",
     emoji: "🚀",
     summary:
-      "Das Baby dreht sich, erkennt sich im Spiegel und versteht erstmals Ursache und Wirkung. Beikost steht vor der Tür — ein komplett neues Kapitel.",
-    canDo: [
-      "Dreht sich von Bauch auf Rücken (CDC: 6 Monate)",
-      "Sitzt mit Unterstützung stabil",
-      "Bringt Dinge gezielt zum Mund — Erkunden durch Tasten",
-      "Erkennt Gesichter von Fremden, reagiert unterschiedlich",
-      "Ursache-Wirkung: schüttelt Rassel bewusst, um Geräusch zu machen",
-    ],
+      "Viele Babys werden jetzt beweglicher und neugieriger — und entdecken, dass sie selbst etwas bewirken können. Beikost steht vor der Tür — ein komplett neues Kapitel.",
     typical: [
       "Zeigt Interesse an Essen der Eltern (Beikost-Signal)",
       "Fremdeln beginnt sich anzukündigen",
       "Alles wandert in den Mund — Zahnung kann beginnen",
       "Wachphasen deutlich länger, Schlaf etwas stabiler (nicht bei allen)",
-    ],
-    watchOut: [
-      "Sitzt bis 6 Monate noch nicht mit Unterstützung",
-      "Keine Silbenlaute",
-      "Kein Drehen",
-      "Zeigt kein Interesse an Essen oder Gegenständen",
     ],
     parentTip:
       "Beikost ab Monat 6: Brei oder Baby-Led Weaning — beide Wege funktionieren. Freies Liegen und Spielen auf dem Boden fördert Motorik am besten (kein Sitzen erzwingen).",
@@ -270,28 +193,15 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     weeksFrom: 27,
     weeksTo: 31,
     ageLabel: "Monat 6–7",
-    title: "Sitzen & Fremdeln",
+    title: "Nähe & Fremdeln",
     emoji: "💞",
     summary:
       "Ein großer Schritt zur Eigenständigkeit — und gleichzeitig der Beginn des Fremdelns. Das ist kein Rückschritt, sondern ein Zeichen, dass dein Baby Bindungspersonen sicher erkennt.",
-    canDo: [
-      "Sitzt alleine, kurz und noch wackelig",
-      "Klatscht in die Hände",
-      "Plappert Silbenketten 'mamama', 'dadada' (noch ohne Bedeutung)",
-      "Pinzettengriff entwickelt sich (Daumen + Zeigefinger)",
-      "Vokalisiert beim Spielen, ruft um Aufmerksamkeit",
-    ],
     typical: [
       "Fremdelt stark — weint bei Fremden, sucht Nähe der Bezugsperson",
       "Schläft evtl. schlechter — Separationsangst beginnt",
       "Erkundet aktiv — legt alles in den Mund",
       "Sehr eigenständig und gleichzeitig sehr bindungssuchend",
-    ],
-    watchOut: [
-      "Sitzt bis 7 Monate gar nicht mit Unterstützung",
-      "Keine Silben/Laute",
-      "Kein Interesse an Umgebung oder Gegenständen",
-      "Reagiert nicht auf den eigenen Namen bis 8 Monate",
     ],
     parentTip:
       "Fremdeln respektieren — nicht erzwingen, dass Fremde das Baby halten. Peekaboo trainiert Objektpermanenz: 'Dinge verschwinden nicht für immer.'",
@@ -312,23 +222,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🐛",
     summary:
       "Die Welt gehört jetzt dem Baby. Erste Fortbewegung bedeutet Freiheit — und neue Gefahren. Gleichzeitig wächst der passive Wortschatz rasant: das Baby versteht viel mehr als es sagt.",
-    canDo: [
-      "Robbt, krabbelt oder schiebt sich vorwärts — alle Wege sind normal (CDC 2022)",
-      "Sitzt selbstständig und stabil",
-      "Zieht sich an Möbeln hoch zum Stehen",
-      "Versteht 'Nein' und einfache Sätze",
-      "Winkt 'Tschüss'",
-    ],
     typical: [
       "Trennungsangst kann sehr stark sein — weint wenn du das Zimmer verlässt",
       "Stopft alles in den Mund (Babyproofing jetzt kritisch)",
       "Schläft möglicherweise schlechter — Mobilitätsschub",
       "Sehr aktiv und explorativ",
-    ],
-    watchOut: [
-      "Keine Fortbewegung (weder krabbeln, robben noch schieben) bis 10 Monate — sprich beim U7 darüber",
-      "Kein Interesse am Hochziehen",
-      "Versteht 'Nein' und eigenen Namen gar nicht",
     ],
     parentTip:
       "Wohnung babyproofing: Steckdosen, Schranktüren, kleine Gegenstände entfernen. Eine sichere Umgebung gibt dir Entspannung und dem Baby Freiheit.",
@@ -345,28 +243,15 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     weeksFrom: 39,
     weeksTo: 52,
     ageLabel: "Monat 9–12",
-    title: "Verstehen & erste Worte",
+    title: "Verstehen & Entdecken",
     emoji: "💡",
     summary:
-      "Ein bedeutsamer kognitiver Schritt: Das Baby sucht versteckte Gegenstände aktiv — es versteht, dass Dinge existieren, auch wenn es sie nicht sieht. Erste echte Wörter entstehen.",
-    canDo: [
-      "Objektpermanenz: sucht versteckte Gegenstände aktiv (CDC: 9 Monate)",
-      "Zeigt mit dem Finger auf Dinge — shared attention",
-      "Sagt 'Mama' und 'Papa' gezielt und bedeutungsvoll",
-      "Folgt einfachen Anweisungen ('Bring mir den Ball')",
-      "Imitiert Alltagshandlungen (Telefonieren, Kämmen)",
-    ],
+      "Ein bedeutsamer kognitiver Schritt: Das Baby sucht versteckte Gegenstände aktiv — es versteht, dass Dinge existieren, auch wenn es sie nicht sieht. Bei manchen Kindern tauchen erste Wörter auf — bei anderen dauert das noch, beides ist gut.",
     typical: [
       "Trennungsangst kann in diesem Alter sehr stark sein",
       "Tagsüber oft auf 1 Schlaf reduziert",
       "Wählerisch beim Essen beginnt — Neo-Phobie ist normal",
-      "Stürzt oft beim Stehen und ersten Schritten",
-    ],
-    watchOut: [
-      "Keine gezielten Wörter ('Mama/Papa') bis 12 Monate",
-      "Kein Zeigen auf Dinge bis 12 Monate",
-      "Keine Fortbewegung bis 10 Monate — sprich beim U7 darüber",
-      "Versteht 'Nein' und eigenen Namen gar nicht",
+      "Wer schon steht oder läuft, purzelt oft — das gehört dazu",
     ],
     parentTip:
       "Versteckspiele wie Kuckuck trainieren aktiv Objektpermanenz. Was wie Spaß aussieht, ist gleichzeitig kognitive Hochleistungsarbeit.",
@@ -385,27 +270,15 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     weeksFrom: 52,
     weeksTo: 65,
     ageLabel: "Monat 12–15",
-    title: "Erste Schritte",
+    title: "Vom Baby zum Kleinkind",
     emoji: "👣",
     summary:
-      "Aus dem Baby wird ein Kleinkind. Erste freie Schritte sind möglich — CDC (2022) setzt den Meilenstein für freies Laufen bis 18 Monate. Nicht jedes Kind läuft zum ersten Geburtstag, und das ist völlig normal.",
-    canDo: [
-      "Erste freie Schritte — variabel, normal bis 18 Monate (CDC 2022)",
-      "Läuft an Möbeln entlang sicher (Cruising)",
-      "3–10 aktive Wörter (CDC: 15 Monate)",
-      "Selbst mit Löffel essen beginnt",
-      "Stapelt 2–3 Würfel, legt Dinge in Behälter",
-    ],
+      "Aus dem Baby wird ein Kleinkind. Manche Kinder machen jetzt erste Schritte, andere lassen sich damit noch viel Zeit — beides ist völlig in Ordnung.",
     typical: [
       "Erste Trotzanfälle — kurzangebunden, schnell vergessen",
       "Wählerisch beim Essen — kein Machtkampf daraus machen",
       "Trennungsangst kann wieder stärker werden",
       "Stürze gehören zum Laufen lernen dazu",
-    ],
-    watchOut: [
-      "Keine freien Schritte bis 18 Monate — beim U7a ansprechen",
-      "Weniger als 3 Wörter bis 12 Monate",
-      "Kein Zeigen auf Dinge bis 12 Monate",
     ],
     parentTip:
       "Barfuß auf verschiedenen Böden fördert das Gleichgewicht am besten. Schuhe erst draußen. Stürze nicht überdramatisieren — das signalisiert dem Kind, ob es sich traut weiterzumachen.",
@@ -426,23 +299,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "💬",
     summary:
       "Manche Kinder lernen in dieser Phase täglich ein neues Wort. Verstehen kommt immer vor Sprechen — das Kind versteht oft fünfmal so viel wie es sagt. Vorlesen ist jetzt der stärkste Sprachbooster.",
-    canDo: [
-      "5–20 aktive Wörter (CDC: 18 Monate — großes Spektrum normal)",
-      "Selbstständiges Laufen, erste Laufversuche und Rennen",
-      "Einfaches Rollenspiel: Puppe füttern, telefonieren",
-      "Versteht einfache 2-Schritt-Anweisungen",
-      "Zeigt auf Körperteile und Bilder in Büchern",
-    ],
     typical: [
       "Trotzanfälle entstehen — kurz, intensiv, schnell vergessen",
       "Will alles selbst machen — braucht dabei aber oft Hilfe",
       "Schläft tagsüber noch 1 Mal",
       "Versteht viel mehr als es sagen kann — Frustration wenn die Sprache fehlt",
-    ],
-    watchOut: [
-      "Unter 5 Wörter bis 18 Monate — beim U7b ansprechen",
-      "Keine Reaktion auf einfache Fragen",
-      "Verliert Fähigkeiten, die es vorher hatte",
     ],
     parentTip:
       "Wahlmöglichkeiten geben ('Willst du das rote oder das blaue?') gibt dem Kind Gefühl von Kontrolle — und reduziert Trotz erheblich.",
@@ -463,24 +324,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🙋",
     summary:
       "'Ich!' und 'Nein!' werden häufiger. Das Kind entdeckt seine Identität als eigene Person. Das ist anstrengend und wunderbar zugleich — und absolut gesund.",
-    canDo: [
-      "20–50 aktive Wörter, erste 2-Wort-Sätze beginnen",
-      "Läuft sicher, rennt, klettert auf Möbel",
-      "Ich-Bewusstsein: 'Meins', 'Ich will'",
-      "Erste echte Empathie: tröstet weinendes Kind oder Puppe",
-      "Treppensteigen mit Festhalten klappt gut",
-    ],
     typical: [
       "Starke Trotzphasen — emotional sehr intensiv",
       "Will Autonomie: selbst entscheiden, selbst machen",
       "Wählerisch beim Essen (Neophobie-Peak)",
       "Schläft auf 1 Mittagsschlaf oder gar keinen mehr",
-    ],
-    watchOut: [
-      "Kein 2-Wort-Satz bis 24 Monate",
-      "Kein symbolisches Spielen bis 24 Monate",
-      "Kein Interesse an anderen Kindern",
-      "Verliert bereits erworbene Fähigkeiten",
     ],
     parentTip:
       "Routinen stärken — Vorhersehbarkeit reduziert Trotz erheblich. Emotionen benennen: 'Du bist wütend, weil...' ist langfristig wirksamer als Ignorieren.",
@@ -497,28 +345,15 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     weeksFrom: 91,
     weeksTo: 104,
     ageLabel: "Monat 21–24",
-    title: "Sprachexplosion",
+    title: "Wörter-Welt",
     emoji: "🌊",
     summary:
-      "Viele Kinder verdoppeln ihren Wortschatz in diesen Monaten. Mit 24 Monaten sind 50+ aktive Wörter und erste 2-Wort-Sätze der Meilenstein laut CDC. Parallelspiel neben anderen Kindern beginnt.",
-    canDo: [
-      "50–100 aktive Wörter, erste 2-Wort-Sätze (CDC: 24 Monate)",
-      "Sortiert Farben und einfache Formen",
-      "Zeigt auf mindestens 2 Körperteile",
-      "Parallelspiel neben anderen Kindern",
-      "Befolgt 2-schrittige Anweisungen",
-    ],
+      "Bei vielen Kindern wächst der Wortschatz jetzt spürbar — jedes in seinem eigenen Tempo. Spielen neben anderen Kindern wird spannender.",
     typical: [
-      "Sprachexplosion: lernt täglich 1–3 neue Wörter",
+      "Oft kommen nach und nach neue Wörter dazu — bei jedem Kind unterschiedlich schnell",
       "Trotzphasen weiterhin intensiv",
       "Teilen fällt noch sehr schwer",
       "Zeigt erste Ansätze von Problemlösung im Spiel",
-    ],
-    watchOut: [
-      "Kein 2-Wort-Satz bis 24 Monate — beim U7a ansprechen",
-      "Kein symbolisches Spielen bis 24 Monate",
-      "Kein Interesse an anderen Kindern",
-      "Unter 50 Wörter bis 24 Monate",
     ],
     parentTip:
       "Vorlesen ist jetzt der stärkste Sprachbooster — 10 Minuten täglich, gern dasselbe Buch 20 Mal. Fragen stellen: 'Wo ist der Hund?' trainiert aktiv den Wortabruf.",
@@ -539,24 +374,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🌟",
     summary:
       "Sätze werden länger, Fragen zahlloser. Das Kind wird zu einer echten Persönlichkeit mit Vorlieben, Humor und ersten Freundschaften. Grenzen werden konsequent getestet — das ist kognitive Entwicklung.",
-    canDo: [
-      "Sätze mit 3–4 Wörtern und mehr",
-      "Spielt mit anderen Kindern (nicht nur nebeneinander)",
-      "Versteht einfache Regeln und kann sie einhalten",
-      "Farben und einfache Formen benennen",
-      "Kennt Vornamen und Familiennamen",
-    ],
     typical: [
       "Grenzen testen ist der Job — das ist kognitive Entwicklung, kein Aufstand",
       "Intensive Fantasiespiele und Rollenspiele",
       "Fragen ohne Ende ('Warum?')",
       "Trotzphasen können bis ins dritte Jahr anhalten",
-    ],
-    watchOut: [
-      "Spricht keine 2-Wort-Sätze bis 30 Monate",
-      "Zeigt kein Interesse an anderen Kindern",
-      "Versteht einfache Anweisungen gar nicht",
-      "Verliert bereits erworbene Fähigkeiten",
     ],
     parentTip:
       "Regeln erklären, nicht nur diktieren. 'Wir waschen Hände, damit keine Bakterien zu uns kommen' — das ist das Fundament für echte Regelakzeptanz.",
@@ -575,23 +397,11 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     emoji: "🏡",
     summary:
       "Das Kleinkind lebt in einer reichen inneren Welt aus Fantasie, Regeln und ersten Moralfragen. Sprache ist jetzt komplex genug für Geschichten, Witze und Verhandlungen.",
-    canDo: [
-      "Spricht in kurzen Sätzen, erzählt einfache Geschichten",
-      "Erste echte Freundschaften mit Lieblingskindern",
-      "Versteht Abfolgen: 'Erst essen, dann spielen'",
-      "Zeigt Empathie: tröstet, teilt (noch nicht immer)",
-      "Fährt Laufrad, springt beidbeinig",
-    ],
     typical: [
       "Potty Training beginnt oder ist in vollem Gange",
       "Erste Moralfragen: 'Ist das fair?', 'Das ist nicht nett'",
       "Geschwisterrivalität wenn vorhanden sehr präsent",
       "Braucht mehr Schlaf als es zeigt — Übermüdung als Trotz-Auslöser",
-    ],
-    watchOut: [
-      "Spricht keine 2-Wort-Sätze bis 30 Monate",
-      "Zeigt kein Interesse an anderen Kindern",
-      "Versteht einfache Anweisungen gar nicht",
     ],
     parentTip:
       "Gemeinsam basteln, malen, bauen — Kreativprozesse fördern Sprache, Konzentration und Frustrationstoleranz gleichzeitig.",
@@ -601,33 +411,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Kind ist 30–36 Monate alt. Komplexe Sprache, erste Freundschaften, Potty Training. Themen: Geschwister, Töpfchentraining, Kindergarten-Vorbereitung, Paarpflege.",
   },
 ];
-
-// ─── Badge-Logik ─────────────────────────────────────────────────────────────
-// Importiert aus milestoneData — wird hier separat übergeben um zirkuläre
-// Abhängigkeiten zu vermeiden. Aufrufer übergibt achievedIds + MILESTONES.
-
-/**
- * Gibt die Phasen-Badge-Nummer zurück:
- * Wie viele Phasen (von Phase 0 aufwärts, inkl. aktueller) haben alle
- * ihre Meilensteine abgeschlossen? Null = kein Badge.
- */
-export function getPhaseBadgeNumber(
-  birthDateISO: string,
-  achievedIds: Set<string>,
-  milestones: { id: string; typicalWeeksFrom: number; typicalWeeksTo: number }[]
-): number {
-  const weeks = getAgeWeeks(birthDateISO);
-  let count = 0;
-  for (const phase of DEVELOPMENT_PHASES) {
-    if (phase.weeksFrom > weeks) break; // Phase noch nicht erreicht
-    const ms = milestones.filter(
-      (m) => m.typicalWeeksFrom < phase.weeksTo && m.typicalWeeksTo > phase.weeksFrom
-    );
-    if (ms.length === 0 || !ms.every((m) => achievedIds.has(m.id))) break;
-    count++;
-  }
-  return count;
-}
 
 // ─── Hilfsfunktionen ──────────────────────────────────────────────────────────
 
@@ -645,6 +428,14 @@ export function getCurrentPhase(birthDateISO: string): DevelopmentPhase | null {
     DEVELOPMENT_PHASES.find((p) => weeks >= p.weeksFrom && weeks < p.weeksTo) ??
     (weeks >= 156 ? DEVELOPMENT_PHASES[DEVELOPMENT_PHASES.length - 1] : null)
   );
+}
+
+/** Phase, in die ein bestimmtes Datum im Leben des Kindes fällt */
+export function getPhaseForDate(birthDateISO: string, dateISO: string): DevelopmentPhase | null {
+  const weeks = Math.floor(
+    (new Date(dateISO).getTime() - new Date(birthDateISO).getTime()) / (7 * 24 * 60 * 60 * 1000)
+  );
+  return DEVELOPMENT_PHASES.find((p) => weeks >= p.weeksFrom && weeks < p.weeksTo) ?? null;
 }
 
 /** Nächste Phase */

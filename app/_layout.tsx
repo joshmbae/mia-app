@@ -23,6 +23,7 @@ export default function RootLayout() {
       <Stack.Screen name="profile/tracker/[id]" />
       <Stack.Screen name="profile/weight/[id]" />
       <Stack.Screen name="profile/development/[id]" />
+      <Stack.Screen name="profile/moment/[id]" options={{ presentation: "modal" }} />
       <Stack.Screen name="familie" />
     </Stack>
   );

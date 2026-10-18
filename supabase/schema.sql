@@ -104,6 +104,23 @@ create table if not exists sleep_logs (
   primary key (baby_id, id)
 );
 
+-- Tagebuch: festgehaltene Momente (Meilensteine aus dem Katalog oder eigene Momente)
+create table if not exists moment_entries (
+  baby_id text not null,
+  id text not null,
+  user_id uuid not null default auth.uid() references auth.users(id),
+  milestone_id text,
+  title text not null,
+  emoji text,
+  happened_on text not null,
+  note text,
+  photos text[] not null default '{}',
+  created_at text not null,
+  primary key (baby_id, id)
+);
+
+-- Altbestand (frühere "Noch nicht / Übt / Geschafft"-Abfrage). Wird von der App
+-- nicht mehr gelesen; die Migration unten übernimmt "Geschafft"-Einträge als Momente.
 create table if not exists milestone_progress (
   baby_id text not null,
   milestone_id text not null,
@@ -135,7 +152,7 @@ begin
   for t in select unnest(array[
     'baby_profiles', 'parent_profiles', 'pregnancy_profiles',
     'chat_sessions', 'chat_messages', 'memories',
-    'weight_logs', 'feeding_logs', 'sleep_logs', 'milestone_progress'
+    'weight_logs', 'feeding_logs', 'sleep_logs', 'milestone_progress', 'moment_entries'
   ])
   loop
     execute format('alter table %I enable row level security', t);
@@ -146,3 +163,29 @@ begin
     );
   end loop;
 end $$;
+
+-- Einmalige Migration: bereits als "Geschafft" markierte Meilensteine werden zu
+-- Tagebuch-Momenten (Titel wird in der App aus dem Katalog ergänzt, falls leer).
+insert into moment_entries (baby_id, id, user_id, milestone_id, title, happened_on, created_at)
+select
+  mp.baby_id,
+  'ms_' || mp.milestone_id,
+  mp.user_id,
+  mp.milestone_id,
+  '',
+  left(coalesce(mp.achieved_at, now()::text), 10),
+  coalesce(mp.achieved_at, now()::text)
+from milestone_progress mp
+where mp.status = 'achieved'
+on conflict (baby_id, id) do nothing;
+
+-- Fotos zu Momenten: privater Storage-Bucket, jede Familie sieht nur ihren
+-- eigenen Ordner (<user_id>/...).
+insert into storage.buckets (id, name, public)
+values ('moment-photos', 'moment-photos', false)
+on conflict (id) do nothing;
+
+drop policy if exists "moment_photos_owner" on storage.objects;
+create policy "moment_photos_owner" on storage.objects for all
+  using (bucket_id = 'moment-photos' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'moment-photos' and (storage.foldername(name))[1] = auth.uid()::text);

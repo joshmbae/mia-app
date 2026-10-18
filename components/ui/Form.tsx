@@ -280,7 +280,10 @@ const styles = StyleSheet.create({
   inputWrapMultiline: { alignItems: "flex-start" },
   inputFocused: { borderColor: colors.peach, backgroundColor: colors.surface },
   input: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    minWidth: 0,
     minHeight: size.input - 4,
     paddingHorizontal: space.md,
     paddingVertical: space.sm,

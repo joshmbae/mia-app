@@ -21,13 +21,13 @@ export const colors = {
   onAccent: "#FFFFFF",
 
   coral: "#E2725B",
-  coralDeep: "#B9503B",
+  coralDeep: "#C74F3B",
   coralSoft: "#FFE1D2",
   peach: "#F6B9A4",
 
   sun: "#FFD66B",
   honey: "#F2A541",
-  sunDeep: "#9A6408",
+  sunDeep: "#A65A0C",
   sunSoft: "#FFF6D9",
 
   sky: "#4F94D4",

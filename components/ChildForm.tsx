@@ -1,7 +1,7 @@
 // ─── Kind anlegen oder bearbeiten ────────────────────────────────────────────
 
-import React, { useState } from "react";
-import { Alert, Image, StyleSheet, Switch, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Image, StyleSheet, Switch, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BabyProfile } from "../types";
@@ -10,16 +10,41 @@ import { deleteBaby, deletePhotos, newId, saveBaby, saveGrowthEntry, uploadPhoto
 import { usePhotoUrls } from "../utils/usePhotoUrls";
 import { pickImages } from "../utils/pickImage";
 import { parseISODate, todayISO } from "../utils/dates";
-import { CHILD_COLORS, colors, fonts, tint, type } from "../utils/theme";
+import { CHILD_COLORS, colors, radius, size, soft, solid, space } from "../utils/theme";
 import { Header, Screen } from "./ui/Screen";
 import { ClayButton, ClayCard, Squish } from "./ui/Clay";
 import { ChoiceChips, ColorPicker, DateField, Field, FieldLabel } from "./ui/Form";
+import { T } from "./ui/T";
+import { useUnsavedGuard } from "./ui/useUnsavedGuard";
 
 type Gender = NonNullable<BabyProfile["gender"]>;
 
 function parseNumber(text: string): number | undefined {
   const n = Number(text.replace(/\s/g, "").replace(",", "."));
   return text.trim() && Number.isFinite(n) && n > 0 ? n : undefined;
+}
+
+/** "Speichern" oben rechts — in allen Formular-Modals gleich */
+function SavePill({ onPress, color, disabled, loading, hint }: { onPress: () => void; color: string; disabled?: boolean; loading?: boolean; hint?: string }) {
+  return (
+    <Squish
+      onPress={onPress}
+      disabled={disabled || loading}
+      haptic
+      accessibilityRole="button"
+      accessibilityLabel="Speichern"
+      accessibilityHint={disabled ? hint : undefined}
+      style={[styles.savePill, { backgroundColor: disabled ? colors.line : solid(color) }]}
+    >
+      {loading ? (
+        <ActivityIndicator color={colors.onAccent} />
+      ) : (
+        <T variant="buttonSm" color={disabled ? colors.muted : colors.onAccent} numberOfLines={1}>
+          Speichern
+        </T>
+      )}
+    </Squish>
+  );
 }
 
 export default function ChildForm({ editId }: { editId?: string }) {
@@ -40,6 +65,24 @@ export default function ChildForm({ editId }: { editId?: string }) {
   const [head, setHead] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Schutz vor ungespeicherten Änderungen; nach Speichern/Löschen erst lösen, dann navigieren
+  const current = JSON.stringify([name, birthDate, color, gender ?? "", premature, dueDate, photo ?? "", notes, height, weight, head]);
+  const initial = useRef(current).current;
+  const [done, setDone] = useState(false);
+  const afterDone = useRef<(() => void) | null>(null);
+  function finish(go: () => void) {
+    afterDone.current = go;
+    setDone(true);
+  }
+  useEffect(() => {
+    if (!done || !afterDone.current) return;
+    const go = afterDone.current;
+    afterDone.current = null;
+    setTimeout(go, 0);
+  }, [done]);
+  useUnsavedGuard(!done && current !== initial);
+  const valid = !!name.trim();
+
   const urls = usePhotoUrls([photo]);
   const photoUrl = photo ? urls[photo] ?? (photo.startsWith("storage:") ? undefined : photo) : undefined;
 
@@ -49,10 +92,7 @@ export default function ChildForm({ editId }: { editId?: string }) {
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      Alert.alert("Wie heißt dein Kind?", "Bitte gib einen Namen oder Spitznamen ein.");
-      return;
-    }
+    if (!valid) return;
     setSaving(true);
     try {
       const id = profile?.id ?? newId();
@@ -90,7 +130,7 @@ export default function ChildForm({ editId }: { editId?: string }) {
         }
       }
       await refresh(id);
-      router.back();
+      finish(() => router.back());
     } catch {
       setSaving(false);
       Alert.alert("Speichern hat nicht geklappt", "Bitte prüfe deine Verbindung und versuch es noch einmal.");
@@ -109,8 +149,11 @@ export default function ChildForm({ editId }: { editId?: string }) {
           style: "destructive",
           onPress: async () => {
             await deleteBaby(profile);
-            await refresh();
-            router.navigate("/(tabs)/start");
+            // Erst den Schutz lösen, dann neu laden (das Formular verschwindet dabei) und zum Start
+            finish(async () => {
+              await refresh();
+              router.navigate("/(tabs)/start");
+            });
           },
         },
       ]
@@ -118,29 +161,39 @@ export default function ChildForm({ editId }: { editId?: string }) {
   }
 
   return (
-    <Screen keyboard bottomSpace={60} contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}>
-      <Header title={profile ? `${profile.name} bearbeiten` : "Kind anlegen"} backIcon="close" />
+    <Screen keyboard blobs="none" contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}>
+      <Header
+        title={profile ? `${profile.name} bearbeiten` : "Kind anlegen"}
+        backIcon="close"
+        right={<SavePill onPress={handleSave} color={color} disabled={!valid} loading={saving} hint="Gebt zuerst einen Namen ein." />}
+      />
 
       {/* Foto */}
       <View style={styles.photoWrap}>
-        <Squish onPress={choosePhoto} accessibilityRole="button" accessibilityLabel="Foto wählen" style={[styles.photo, { backgroundColor: tint(color, 0.22) }]}>
+        <Squish onPress={choosePhoto} accessibilityRole="button" accessibilityLabel="Foto wählen" style={[styles.photo, { backgroundColor: soft(color) }]}>
           {photoUrl ? (
-            <Image source={{ uri: photoUrl }} style={styles.photoImg} />
+            <Image source={{ uri: photoUrl }} style={styles.photoImg} accessibilityIgnoresInvertColors />
           ) : (
-            <View style={[styles.photoImg, { backgroundColor: color, alignItems: "center", justifyContent: "center" }]}>
-              <Text style={styles.initial}>{name.trim() ? name.trim().charAt(0).toUpperCase() : "?"}</Text>
+            <View style={[styles.photoImg, { backgroundColor: solid(color), alignItems: "center", justifyContent: "center" }]}>
+              <T variant="hero" color={colors.onAccent}>
+                {name.trim() ? name.trim().charAt(0).toUpperCase() : "?"}
+              </T>
             </View>
           )}
           <View style={[styles.camera, { backgroundColor: colors.sun }]}>
-            <Ionicons name="camera" size={18} color={colors.ink} />
+            <Ionicons name="camera" size={size.icon.sm} color={colors.ink} />
           </View>
         </Squish>
         {photo ? (
-          <Squish onPress={() => setPhoto(undefined)} accessibilityRole="button" style={{ marginTop: 10 }}>
-            <Text style={[type.small, { color: colors.danger }]}>Foto entfernen</Text>
+          <Squish onPress={() => setPhoto(undefined)} accessibilityRole="button" accessibilityLabel="Foto entfernen" style={styles.photoAction}>
+            <T variant="small" color={colors.danger}>
+              Foto entfernen
+            </T>
           </Squish>
         ) : (
-          <Text style={[type.small, { marginTop: 10 }]}>Tippe, um ein Foto zu wählen</Text>
+          <View style={styles.photoAction}>
+            <T variant="small">Tippt, um ein Foto zu wählen</T>
+          </View>
         )}
       </View>
 
@@ -167,14 +220,15 @@ export default function ChildForm({ editId }: { editId?: string }) {
           value={gender}
           onChange={(v) => setGender(gender === v ? undefined : v)}
           color={color}
+          label="Geschlecht"
         />
       </View>
 
-      <ClayCard strength="soft" style={styles.block}>
+      <ClayCard style={styles.block}>
         <View style={styles.switchRow}>
           <View style={{ flex: 1 }}>
-            <Text style={type.bodyStrong}>Zu früh geboren</Text>
-            <Text style={type.small}>Dann richten sich die Phasen nach dem errechneten Termin.</Text>
+            <T variant="bodyStrong">Zu früh geboren</T>
+            <T variant="small">Dann richten sich die Phasen nach dem errechneten Termin.</T>
           </View>
           <Switch
             value={premature}
@@ -185,7 +239,7 @@ export default function ChildForm({ editId }: { editId?: string }) {
           />
         </View>
         {premature && (
-          <View style={{ marginTop: 14 }}>
+          <View style={{ marginTop: space.md }}>
             <FieldLabel>Errechneter Termin</FieldLabel>
             <DateField value={dueDate} onChange={setDueDate} color={color} quick={false} minimumDate={parseISODate(birthDate)} />
           </View>
@@ -197,28 +251,35 @@ export default function ChildForm({ editId }: { editId?: string }) {
           <FieldLabel hint="Freiwillig — wird die erste Messung im Zeitstrahl.">Bei der Geburt</FieldLabel>
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
-              <Field label="cm" value={height} onChangeText={setHeight} placeholder="52" keyboardType="decimal-pad" />
+              <Field label="Größe" unit="cm" value={height} onChangeText={setHeight} placeholder="–" keyboardType="decimal-pad" />
             </View>
             <View style={{ flex: 1 }}>
-              <Field label="kg" value={weight} onChangeText={setWeight} placeholder="3,4" keyboardType="decimal-pad" />
+              <Field label="Gewicht" unit="kg" value={weight} onChangeText={setWeight} placeholder="–" keyboardType="decimal-pad" />
             </View>
             <View style={{ flex: 1 }}>
-              <Field label="Kopf cm" value={head} onChangeText={setHead} placeholder="35" keyboardType="decimal-pad" />
+              <Field label="Kopf" unit="cm" value={head} onChangeText={setHead} placeholder="–" keyboardType="decimal-pad" />
             </View>
           </View>
         </View>
       )}
 
-      <Field label="Notizen" hint="Was du festhalten möchtest — nur für euch." value={notes} onChangeText={setNotes} multiline placeholder="z. B. Lieblingslied, Spitznamen, Besonderheiten" />
+      <Field label="Notizen" hint="Was ihr festhalten möchtet — nur für euch." value={notes} onChangeText={setNotes} multiline placeholder="z. B. Lieblingslied, Spitznamen, Besonderheiten" />
 
-      <ClayButton label={profile ? "Änderungen sichern" : `${name.trim() || "Kind"} anlegen`} icon="heart" color={color} loading={saving} onPress={handleSave} />
-      {profile && <ClayButton label="Kind löschen" icon="trash-outline" variant="ghost" color={colors.danger} onPress={handleDelete} style={{ marginTop: 8 }} />}
+      {profile && <ClayButton label="Kind löschen" icon="trash-outline" variant="ghost" color={colors.danger} onPress={handleDelete} style={{ marginTop: space.xs }} />}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  photoWrap: { alignItems: "center", marginBottom: 22 },
+  savePill: {
+    height: size.touch,
+    minWidth: 104,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  photoWrap: { alignItems: "center", marginBottom: space.lg },
   photo: {
     width: 140,
     height: 140,
@@ -230,20 +291,20 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 77,
   },
   photoImg: { width: 120, height: 120, borderTopLeftRadius: 60, borderTopRightRadius: 53, borderBottomRightRadius: 62, borderBottomLeftRadius: 55 },
-  initial: { fontFamily: fonts.displayBold, fontSize: 52, color: colors.onAccent },
   camera: {
     position: "absolute",
-    right: 2,
-    bottom: 6,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    right: space.xxs / 2,
+    bottom: space.xxs + 2,
+    width: size.chip,
+    height: size.chip,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
     borderColor: colors.surface,
   },
-  block: { marginBottom: 20 },
-  switchRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  row: { flexDirection: "row", gap: 10 },
+  photoAction: { minHeight: size.touch, justifyContent: "center", paddingHorizontal: space.sm, marginTop: space.xxs },
+  block: { marginBottom: space.lg },
+  switchRow: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  row: { flexDirection: "row", gap: space.sm },
 });

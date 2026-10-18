@@ -43,3 +43,4 @@ backend/
 # generated native folders
 /ios
 /android
+.review-shots/

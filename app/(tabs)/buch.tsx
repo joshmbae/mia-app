@@ -4,30 +4,35 @@ import { router } from "expo-router";
 import { Child } from "../../types";
 import { useFamily } from "../../utils/family";
 import { useChildData } from "../../utils/useChildData";
-import { colors, fonts, radius, TAB_BAR_SPACE, tint, type } from "../../utils/theme";
+import { colors, emoji, radius, size, solid, space, tint } from "../../utils/theme";
 import { formatDate } from "../../utils/dates";
 import { buildChapters } from "../../utils/moments";
 import { exportBook } from "../../utils/bookExport";
 import { celebrate } from "../../utils/haptics";
-import { Header, Screen } from "../../components/ui/Screen";
+import { announce } from "../../utils/a11y";
+import { Header, Screen, useTabBarSpace } from "../../components/ui/Screen";
 import { ClayButton, ClayCard } from "../../components/ui/Clay";
+import { T } from "../../components/ui/T";
 import { ChildAvatar } from "../../components/ui/ChildAvatar";
 import { EmptyHint } from "../../components/MomentBits";
 
+const MAX_WIDTH = 560;
+
 export default function BookScreen() {
   const { active } = useFamily();
+  const bottomSpace = useTabBarSpace();
   if (!active) {
     return (
-      <Screen bottomSpace={TAB_BAR_SPACE}>
+      <Screen bottomSpace={bottomSpace}>
         <Header title="Buch" back={false} />
-        <Text style={type.body}>Lege zuerst ein Kind an.</Text>
+        <T variant="body">Legt zuerst ein Kind an.</T>
       </Screen>
     );
   }
-  return <Book child={active} />;
+  return <Book child={active} bottomSpace={bottomSpace} />;
 }
 
-function Book({ child }: { child: Child }) {
+function Book({ child, bottomSpace }: { child: Child; bottomSpace: number }) {
   const { moments, growth } = useChildData(child.id);
   const [includeGrowth, setIncludeGrowth] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -41,27 +46,32 @@ function Book({ child }: { child: Child }) {
     try {
       await exportBook(child, moments, growth, { includeGrowth });
       celebrate();
+      announce("Buch erstellt");
     } catch {
-      Alert.alert("Das hat nicht geklappt", "Das Buch konnte gerade nicht erstellt werden. Bitte versuch es noch einmal.");
+      Alert.alert("Das hat nicht geklappt", "Das Buch konnte gerade nicht erstellt werden. Bitte versucht es noch einmal.");
     } finally {
       setBusy(false);
     }
   }
 
+  const since = child.kind === "baby" ? `seit dem ${formatDate(child.profile.birthDate)}` : `Termin: ${formatDate(child.profile.dueDate)}`;
+
   return (
-    <Screen bottomSpace={TAB_BAR_SPACE} contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}>
+    <Screen bottomSpace={bottomSpace} contentStyle={styles.content}>
       <Header title="Das Buch" subtitle={`${child.name}s Geschichte zum Blättern`} back={false} />
 
       {/* Cover-Vorschau */}
-      <View style={styles.coverWrap}>
+      <View style={styles.coverWrap} accessible accessibilityRole="image" accessibilityLabel={`Buchcover: Unsere Momente mit ${child.name}, ${since}`}>
         <View style={[styles.coverBack, { backgroundColor: tint(child.color, 0.35) }]} />
-        <ClayCard style={styles.cover} glow={child.color} strength="strong">
-          <ChildAvatar child={child} size={120} />
-          <Text style={[type.label, { marginTop: 14 }]}>Unsere Momente mit</Text>
-          <Text style={[type.hero, { textAlign: "center" }]}>{child.name}</Text>
-          <Text style={type.small}>
-            {child.kind === "baby" ? `seit dem ${formatDate(child.profile.birthDate)}` : `Termin: ${formatDate(child.profile.dueDate)}`}
-          </Text>
+        <ClayCard style={styles.cover} lift="float">
+          <ChildAvatar child={child} size={96} />
+          <T variant="label" style={styles.coverLabel}>
+            Unsere Momente mit
+          </T>
+          <T variant="hero" align="center" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+            {child.name}
+          </T>
+          <T variant="small">{since}</T>
         </ClayCard>
       </View>
 
@@ -71,86 +81,104 @@ function Book({ child }: { child: Child }) {
           <ClayButton label="Ersten Moment festhalten" icon="add" color={child.color} onPress={() => router.push(`/moment/neu?child=${child.id}`)} />
         </ClayCard>
       ) : (
-        <View style={{ gap: 16 }}>
-          <View style={styles.stats}>
-            <Stat value={moments.length} label={moments.length === 1 ? "Moment" : "Momente"} bg={colors.coralSoft} />
-            <Stat value={photoCount} label={photoCount === 1 ? "Foto" : "Fotos"} bg={colors.skySoft} />
-            <Stat value={pages} label="Seiten" bg={colors.sunSoft} />
+        <View style={styles.sections}>
+          <View style={styles.group}>
+            <View style={styles.stats}>
+              <Stat value={moments.length} label={moments.length === 1 ? "Moment" : "Momente"} />
+              <Stat value={photoCount} label={photoCount === 1 ? "Foto" : "Fotos"} />
+              <Stat value={pages} label="Seiten" />
+            </View>
+            <ClayButton label="Buch als PDF erstellen" icon="book" color={child.color} loading={busy} onPress={handleExport} style={styles.cta} />
+            <T variant="small" align="center">
+              Format A5 · zum Teilen, Ausdrucken oder als Vorlage für ein gedrucktes Fotobuch.
+            </T>
           </View>
 
           <ClayCard>
-            <Text style={[type.h3, { marginBottom: 10 }]}>Kapitel</Text>
-            {chapters.map((c) => (
-              <View key={c.key} style={styles.chapterRow}>
-                <Text style={{ fontSize: 22 }}>{c.emoji}</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={type.bodyStrong}>{c.title}</Text>
-                  <Text style={type.small}>{c.subtitle}</Text>
+            <T variant="h3" accessibilityRole="header" style={styles.chapterTitle}>
+              Kapitel
+            </T>
+            {chapters.map((c, i) => (
+              <View key={c.key} style={[styles.chapterRow, i > 0 && styles.divider]}>
+                <Text style={emoji(24)} accessibilityElementsHidden importantForAccessibility="no">
+                  {c.emoji}
+                </Text>
+                <View style={styles.chapterText}>
+                  <T variant="bodyStrong">{c.title}</T>
+                  <T variant="small">{c.subtitle}</T>
                 </View>
-                <Text style={styles.chapterCount}>{c.moments.length}</Text>
+                <View style={styles.count} accessibilityLabel={`${c.moments.length} ${c.moments.length === 1 ? "Moment" : "Momente"}`}>
+                  <T variant="chip" color={colors.inkSoft}>
+                    {c.moments.length}
+                  </T>
+                </View>
               </View>
             ))}
             {growth.length > 0 && (
-              <View style={[styles.chapterRow, styles.toggleRow]}>
-                <Text style={{ fontSize: 22 }}>📏</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={type.bodyStrong}>Messlatte</Text>
-                  <Text style={type.small}>Alle Messungen auf einer Seite</Text>
+              <View style={[styles.chapterRow, styles.divider]}>
+                <Text style={emoji(24)} accessibilityElementsHidden importantForAccessibility="no">
+                  📏
+                </Text>
+                <View style={styles.chapterText}>
+                  <T variant="bodyStrong">Messlatte</T>
+                  <T variant="small">Alle Messungen auf einer Seite</T>
                 </View>
                 <Switch
                   value={includeGrowth}
                   onValueChange={setIncludeGrowth}
-                  trackColor={{ true: child.color, false: colors.line }}
+                  trackColor={{ true: solid(child.color), false: colors.line }}
                   thumbColor={colors.surface}
                   accessibilityLabel="Messlatte ins Buch aufnehmen"
                 />
               </View>
             )}
           </ClayCard>
-
-          <ClayButton label="Buch als PDF erstellen" icon="book" color={child.color} loading={busy} onPress={handleExport} />
-          <Text style={[type.small, { textAlign: "center" }]}>
-            Format A5 · zum Teilen, Ausdrucken oder als Vorlage für ein gedrucktes Fotobuch.
-          </Text>
         </View>
       )}
     </Screen>
   );
 }
 
-function Stat({ value, label, bg }: { value: number; label: string; bg: string }) {
+function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <ClayCard color={bg} strength="soft" style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={type.small}>{label}</Text>
+    <ClayCard style={styles.stat} accessibilityLabel={`${value} ${label}`}>
+      <T variant="stat">{value}</T>
+      <T variant="small">{label}</T>
     </ClayCard>
   );
 }
 
 const styles = StyleSheet.create({
-  coverWrap: { alignItems: "center", marginBottom: 24, paddingTop: 6 },
+  content: { maxWidth: MAX_WIDTH, width: "100%", alignSelf: "center" },
+  coverWrap: { alignItems: "center", marginBottom: space.lg, paddingTop: space.xxs },
   coverBack: {
     position: "absolute",
-    top: 16,
-    width: "78%",
+    top: space.sm,
+    width: "70%",
     height: "92%",
     borderRadius: radius.xl,
     transform: [{ rotate: "4deg" }],
   },
-  cover: { width: "78%", alignItems: "center", paddingVertical: 26, borderRadius: radius.xl, transform: [{ rotate: "-2deg" }] },
-  stats: { flexDirection: "row", gap: 12 },
-  stat: { flex: 1, alignItems: "center", paddingVertical: 14 },
-  statValue: { fontFamily: fonts.displayBold, fontSize: 28, color: colors.ink },
-  chapterRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
-  toggleRow: { borderTopWidth: 2, borderTopColor: colors.bgDeep, borderStyle: "dashed", marginTop: 6, paddingTop: 14 },
-  chapterCount: {
-    fontFamily: fonts.display,
-    fontSize: 15,
-    color: colors.inkSoft,
-    backgroundColor: colors.bg,
+  cover: { width: "70%", alignItems: "center", paddingVertical: space.lg, borderRadius: radius.xl, transform: [{ rotate: "-2deg" }] },
+  coverLabel: { marginTop: space.sm },
+  sections: { gap: space.section },
+  group: { gap: space.sm },
+  stats: { flexDirection: "row", gap: space.sm },
+  stat: { flex: 1, alignItems: "center", paddingVertical: space.sm },
+  cta: { marginTop: space.xs },
+  chapterTitle: { marginBottom: space.xs },
+  chapterRow: { flexDirection: "row", alignItems: "center", gap: space.sm, paddingVertical: space.sm },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: colors.line },
+  chapterText: { flex: 1 },
+  count: {
+    minWidth: size.pill,
+    height: size.pill,
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    overflow: "hidden",
+    paddingHorizontal: space.xs,
+    backgroundColor: colors.surfaceSoft,
+    borderWidth: 1,
+    borderColor: colors.line,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

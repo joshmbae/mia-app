@@ -1,35 +1,39 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { StyleSheet, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BabyProfile, Child, GrowthEntry } from "../../types";
 import { useFamily } from "../../utils/family";
 import { useChildData } from "../../utils/useChildData";
-import { colors, fonts, radius, TAB_BAR_SPACE, type } from "../../utils/theme";
+import { colors, radius, size, soft, solid, space } from "../../utils/theme";
 import { ageAtDate, ageText, formatDateShort, formatMonthTag, pregnancyWeek } from "../../utils/dates";
 import { formatCm, formatMeasurement, formatWeight, latestValues, momentColor, momentEmoji, momentTitle } from "../../utils/moments";
-import { Header, Screen } from "../../components/ui/Screen";
+import { Header, Screen, useTabBarSpace } from "../../components/ui/Screen";
 import { ClayButton, ClayCard, IconButton, Squish } from "../../components/ui/Clay";
 import { ChoiceChips } from "../../components/ui/Form";
+import { T } from "../../components/ui/T";
 import { GrowthChart } from "../../components/GrowthChart";
 import { EmptyHint } from "../../components/MomentBits";
 
 type Metric = "height" | "weight" | "head";
 
-const METRICS: Record<Metric, { label: string; pick: (g: GrowthEntry) => number | undefined; format: (v: number) => string; color: string }> = {
-  height: { label: "Größe", pick: (g) => g.heightCm, format: formatCm, color: colors.honey },
-  weight: { label: "Gewicht", pick: (g) => g.weightGrams, format: formatWeight, color: colors.sky },
-  head: { label: "Kopf", pick: (g) => g.headCm, format: formatCm, color: colors.lilac },
+const METRICS: Record<Metric, { label: string; long: string; pick: (g: GrowthEntry) => number | undefined; format: (v: number) => string; color: string }> = {
+  height: { label: "Größe", long: "Größe", pick: (g) => g.heightCm, format: formatCm, color: colors.honey },
+  weight: { label: "Gewicht", long: "Gewicht", pick: (g) => g.weightGrams, format: formatWeight, color: colors.sky },
+  head: { label: "Kopf", long: "Kopfumfang", pick: (g) => g.headCm, format: formatCm, color: colors.lilac },
 };
+
+const MAX_WIDTH = 560;
 
 export default function GrowthScreen() {
   const { active } = useFamily();
+  const bottomSpace = useTabBarSpace();
 
   if (!active) {
     return (
-      <Screen bottomSpace={TAB_BAR_SPACE}>
+      <Screen bottomSpace={bottomSpace}>
         <Header title="Wachstum" back={false} />
-        <Text style={type.body}>Lege zuerst ein Kind an.</Text>
+        <T variant="body">Legt zuerst ein Kind an.</T>
       </Screen>
     );
   }
@@ -37,7 +41,7 @@ export default function GrowthScreen() {
   if (active.kind === "pregnancy") {
     const { week } = pregnancyWeek(active.profile.dueDate);
     return (
-      <Screen bottomSpace={TAB_BAR_SPACE}>
+      <Screen bottomSpace={bottomSpace}>
         <Header title="Wachstum" back={false} />
         <ClayCard>
           <EmptyHint
@@ -51,10 +55,10 @@ export default function GrowthScreen() {
     );
   }
 
-  return <Growth child={active} profile={active.profile} />;
+  return <Growth child={active} profile={active.profile} bottomSpace={bottomSpace} />;
 }
 
-function Growth({ child, profile }: { child: Child; profile: BabyProfile }) {
+function Growth({ child, profile, bottomSpace }: { child: Child; profile: BabyProfile; bottomSpace: number }) {
   const { moments, growth } = useChildData(child.id);
   const { width } = useWindowDimensions();
   const [metric, setMetric] = useState<Metric>("height");
@@ -63,8 +67,9 @@ function Growth({ child, profile }: { child: Child; profile: BabyProfile }) {
   const current = available.includes(metric) ? metric : available[0] ?? "height";
   const m = METRICS[current];
   const points = growth.filter((g) => m.pick(g)).map((g) => ({ date: g.measuredOn, value: m.pick(g)! }));
-  const chartWidth = Math.min(width, 560) - 40 - 32;
+  const chartWidth = Math.min(width, MAX_WIDTH) - space.gutter * 2 - space.md * 2;
   const newestFirst = [...growth].reverse();
+  const addMeasurement = () => router.push(`/messung?child=${child.id}`);
 
   const delta = (k: Metric) => {
     const list = growth.filter((g) => METRICS[k].pick(g));
@@ -76,13 +81,22 @@ function Growth({ child, profile }: { child: Child; profile: BabyProfile }) {
     return `+${METRICS[k].format(d)} seit ${formatDateShort(list[list.length - 2].measuredOn)}`;
   };
 
+  const note = (k: Metric, v?: { on: string }) => delta(k) ?? (v ? formatDateShort(v.on) : "noch nicht gemessen");
+
+  const summary = (() => {
+    if (points.length === 0) return undefined;
+    const last = points[points.length - 1];
+    const d = delta(current);
+    return `${m.long}: zuletzt ${m.format(last.value)} am ${formatDateShort(last.date)}${d ? `, ${d}` : ""}. ${points.length} Messungen.`;
+  })();
+
   return (
-    <Screen bottomSpace={TAB_BAR_SPACE} blobs="cool" contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}>
+    <Screen bottomSpace={bottomSpace} blobs="cool" contentStyle={styles.content}>
       <Header
         title={`${child.name} wächst`}
         subtitle={ageText(profile.birthDate)}
         back={false}
-        right={<IconButton icon="add" label="Neu messen" background={child.color} color={colors.onAccent} onPress={() => router.push(`/messung?child=${child.id}`)} />}
+        right={<IconButton icon="add" label="Neu messen" background={solid(child.color)} color={colors.onAccent} onPress={addMeasurement} />}
       />
 
       {growth.length === 0 ? (
@@ -90,27 +104,27 @@ function Growth({ child, profile }: { child: Child; profile: BabyProfile }) {
           <EmptyHint
             emoji="📏"
             title="Noch keine Messung"
-            text="Trag Größe, Gewicht oder Kopfumfang ein — z. B. aus dem gelben U-Heft. Jede Messung erscheint auch im Zeitstrahl."
+            text="Tragt Größe, Gewicht oder Kopfumfang ein — z. B. aus dem gelben U-Heft. Jede Messung erscheint auch im Zeitstrahl."
           />
-          <ClayButton label="Erste Messung eintragen" icon="add" color={child.color} onPress={() => router.push(`/messung?child=${child.id}`)} />
+          <ClayButton label="Erste Messung eintragen" icon="add" color={child.color} onPress={addMeasurement} />
         </ClayCard>
       ) : (
-        <View style={{ gap: 16 }}>
+        <View style={styles.sections}>
           <View style={styles.grid}>
-            <ValueTile label="Größe" value={values.height ? formatCm(values.height.value) : "–"} note={delta("height") ?? (values.height ? formatDateShort(values.height.on) : "noch nicht gemessen")} bg={colors.sunSoft} fg={colors.sunDeep} glow={colors.sun} />
-            <ValueTile label="Gewicht" value={values.weight ? formatWeight(values.weight.value) : "–"} note={delta("weight") ?? (values.weight ? formatDateShort(values.weight.on) : "noch nicht gemessen")} bg={colors.skySoft} fg={colors.skyDeep} glow={colors.sky} />
+            <View style={styles.tileRow}>
+              <ValueTile label="Größe" color={METRICS.height.color} value={values.height ? formatCm(values.height.value) : "–"} note={note("height", values.height)} />
+              <ValueTile label="Gewicht" color={METRICS.weight.color} value={values.weight ? formatWeight(values.weight.value) : "–"} note={note("weight", values.weight)} />
+            </View>
+            {values.head && (
+              <ValueTile label="Kopfumfang" color={METRICS.head.color} value={formatCm(values.head.value)} note={note("head", values.head)} wide />
+            )}
           </View>
-          {values.head && (
-            <ClayCard color={colors.lilacSoft} glow={colors.lilac} strength="soft" style={styles.headRow}>
-              <Text style={[type.label, { color: colors.lilacDeep, flex: 1 }]}>Kopfumfang</Text>
-              <Text style={styles.headValue}>{formatCm(values.head.value)}</Text>
-            </ClayCard>
-          )}
 
           <ClayCard>
             {available.length > 1 && (
-              <View style={{ marginBottom: 12 }}>
+              <View style={styles.chips}>
                 <ChoiceChips
+                  label="Messgröße"
                   options={available.map((k) => ({ value: k, label: METRICS[k].label }))}
                   value={current}
                   onChange={setMetric}
@@ -123,81 +137,107 @@ function Growth({ child, profile }: { child: Child; profile: BabyProfile }) {
                 points={points}
                 width={chartWidth}
                 color={m.color}
+                summary={summary}
                 startLabel={formatDateShort(points[0].date)}
                 endLabel={formatDateShort(points[points.length - 1].date)}
                 moments={moments.map((mo) => ({ id: mo.id, date: mo.happenedOn, emoji: momentEmoji(mo), color: momentColor(mo), title: momentTitle(mo) }))}
                 onMomentPress={(id) => router.push(`/moment/${id}?child=${child.id}`)}
               />
             ) : (
-              <Text style={type.body}>Ab der zweiten Messung zeigt sich hier {child.name}s Kurve.</Text>
+              <T variant="body">Ab der zweiten Messung zeigt sich hier {child.name}s Kurve.</T>
             )}
-            <Text style={[type.small, { marginTop: 10 }]}>
+            <T variant="small" style={styles.chartNote}>
               Das ist ganz allein {child.name}s Kurve — jedes Kind wächst in seinem eigenen Tempo. Die Bläschen sind eure Momente.
-            </Text>
+            </T>
           </ClayCard>
 
-          <Text style={[type.h3, { marginTop: 4 }]}>Alle Messungen</Text>
-          {newestFirst.map((g) => (
-            <Squish
-              key={g.id}
-              onPress={() => router.push(`/messung?child=${child.id}&id=${g.id}`)}
-              accessibilityRole="button"
-              accessibilityLabel={`Messung vom ${formatDateShort(g.measuredOn)} bearbeiten`}
-              style={styles.row}
-            >
-              <View style={styles.monthTag}>
-                <Text style={styles.monthText}>{formatMonthTag(g.measuredOn)}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={type.bodyStrong}>{formatMeasurement(g)}</Text>
-                <Text style={type.small}>
-                  {ageAtDate(profile.birthDate, g.measuredOn)}
-                  {g.note ? ` · ${g.note}` : ""}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-            </Squish>
-          ))}
+          <View style={styles.list}>
+            <T variant="h3" accessibilityRole="header">
+              Alle Messungen
+            </T>
+            {newestFirst.map((g) => (
+              <Squish
+                key={g.id}
+                onPress={() => router.push(`/messung?child=${child.id}&id=${g.id}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`Messung vom ${formatDateShort(g.measuredOn)}: ${formatMeasurement(g)}. Bearbeiten`}
+                style={styles.row}
+              >
+                <View style={styles.monthTag}>
+                  <T variant="chip" color={solid(colors.honey)}>
+                    {formatMonthTag(g.measuredOn)}
+                  </T>
+                </View>
+                <View style={styles.rowText}>
+                  <T variant="bodyStrong">{formatMeasurement(g)}</T>
+                  <T variant="small">
+                    {ageAtDate(profile.birthDate, g.measuredOn)}
+                    {g.note ? ` · ${g.note}` : ""}
+                  </T>
+                </View>
+                <Ionicons name="chevron-forward" size={size.icon.sm} color={colors.muted} />
+              </Squish>
+            ))}
+          </View>
         </View>
       )}
     </Screen>
   );
 }
 
-function ValueTile({ label, value, note, bg, fg, glow }: { label: string; value: string; note: string; bg: string; fg: string; glow: string }) {
+/** Einheitliche Wertekachel: weiß, farbiges Label, große Zahl, kleine Notiz */
+function ValueTile({ label, value, note, color, wide }: { label: string; value: string; note: string; color: string; wide?: boolean }) {
   return (
-    <ClayCard color={bg} glow={glow} style={{ flex: 1 }}>
-      <Text style={[type.label, { color: fg }]}>{label}</Text>
-      <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
+    <ClayCard style={wide ? styles.tileWide : styles.tile}>
+      <View style={wide ? styles.tileWideText : null}>
+        <T variant="label" color={solid(color)}>
+          {label}
+        </T>
+        {wide ? (
+          <T variant="small" numberOfLines={2}>
+            {note}
+          </T>
+        ) : null}
+      </View>
+      <T variant="stat" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={wide ? null : styles.tileValue}>
         {value}
-      </Text>
-      <Text style={type.small} numberOfLines={2}>
-        {note}
-      </Text>
+      </T>
+      {wide ? null : (
+        <T variant="small" numberOfLines={2}>
+          {note}
+        </T>
+      )}
     </ClayCard>
   );
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: "row", gap: 14 },
-  value: { fontFamily: fonts.displayBold, fontSize: 34, lineHeight: 40, color: colors.ink, marginVertical: 2 },
-  headRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14 },
-  headValue: { fontFamily: fonts.displayBold, fontSize: 22, color: colors.ink },
+  content: { maxWidth: MAX_WIDTH, width: "100%", alignSelf: "center" },
+  sections: { gap: space.section },
+  grid: { gap: space.sm },
+  tileRow: { flexDirection: "row", gap: space.sm },
+  tile: { flex: 1 },
+  tileValue: { marginVertical: space.xxs },
+  tileWide: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  tileWideText: { flex: 1, gap: space.xxs },
+  chips: { marginBottom: space.md },
+  chartNote: { marginTop: space.sm },
+  list: { gap: space.xs },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: space.sm,
     backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    padding: 12,
+    borderRadius: radius.lg,
+    padding: space.md,
   },
+  rowText: { flex: 1 },
   monthTag: {
-    width: 46,
-    height: 46,
-    borderRadius: 16,
-    backgroundColor: colors.sunSoft,
+    width: size.buttonSm,
+    height: size.buttonSm,
+    borderRadius: radius.sm,
+    backgroundColor: soft(colors.sun),
     alignItems: "center",
     justifyContent: "center",
   },
-  monthText: { fontFamily: fonts.displayBold, fontSize: 13, color: colors.sunDeep },
 });

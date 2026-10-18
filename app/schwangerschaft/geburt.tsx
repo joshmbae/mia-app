@@ -1,7 +1,7 @@
 // ─── Unser Baby ist da! — aus der Schwangerschaft wird ein Kind ──────────────
 
 import React, { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { BabyProfile, Child } from "../../types";
 import { useChild, useFamily } from "../../utils/family";
@@ -9,10 +9,13 @@ import { convertPregnancyToBaby, newId, uploadPhoto } from "../../utils/storage"
 import { daysBetween, todayISO } from "../../utils/dates";
 import { pickImages } from "../../utils/pickImage";
 import { celebrate } from "../../utils/haptics";
-import { CHILD_COLORS, colors, type } from "../../utils/theme";
+import { announce } from "../../utils/a11y";
+import { CHILD_COLORS, colors, ctaShadow, emoji, radius, size, solid, space } from "../../utils/theme";
 import { Header, Screen } from "../../components/ui/Screen";
-import { ClayButton, ClayCard } from "../../components/ui/Clay";
+import { ClayButton, ClayCard, Squish } from "../../components/ui/Clay";
 import { ChoiceChips, ColorPicker, DateField, Field, FieldLabel } from "../../components/ui/Form";
+import { T } from "../../components/ui/T";
+import { useUnsavedGuard } from "../../components/ui/useUnsavedGuard";
 import { Confetti } from "../../components/Confetti";
 
 type Gender = NonNullable<BabyProfile["gender"]>;
@@ -25,7 +28,7 @@ function parseNumber(text: string): number | undefined {
 export default function BirthScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const pregnancy = useChild(params.id);
-  if (!pregnancy || pregnancy.kind !== "pregnancy") return <Screen>{null}</Screen>;
+  if (!pregnancy || pregnancy.kind !== "pregnancy") return <Screen blobs="none">{null}</Screen>;
   // Erst rendern, wenn die Schwangerschaft geladen ist — sie liefert die Startwerte
   return <BirthForm key={pregnancy.id} pregnancy={pregnancy} />;
 }
@@ -33,9 +36,10 @@ export default function BirthScreen() {
 function BirthForm({ pregnancy }: { pregnancy: Child }) {
   const { refresh } = useFamily();
   const due = pregnancy.kind === "pregnancy" ? pregnancy.profile.dueDate.slice(0, 10) : todayISO();
+  const initialDate = due < todayISO() ? due : todayISO();
 
   const [name, setName] = useState("");
-  const [birthDate, setBirthDate] = useState(due < todayISO() ? due : todayISO());
+  const [birthDate, setBirthDate] = useState(initialDate);
   const [color, setColor] = useState(pregnancy.color);
   const [gender, setGender] = useState<Gender | undefined>();
   const [photo, setPhoto] = useState<string | undefined>();
@@ -43,17 +47,25 @@ function BirthForm({ pregnancy }: { pregnancy: Child }) {
   const [weight, setWeight] = useState("");
   const [head, setHead] = useState("");
   const [saving, setSaving] = useState(false);
-  const [party] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   const earlyDays = daysBetween(birthDate, due);
   const premature = earlyDays >= 21; // vor SSW 37
+  const canSave = !!name.trim() && !saving;
+
+  const changed =
+    !!name.trim() ||
+    birthDate !== initialDate ||
+    color !== pregnancy.color ||
+    !!gender ||
+    !!photo ||
+    !!height.trim() ||
+    !!weight.trim() ||
+    !!head.trim();
+  useUnsavedGuard(changed && !saved);
 
   async function handleSave() {
-    if (pregnancy.kind !== "pregnancy") return;
-    if (!name.trim()) {
-      Alert.alert("Wie heißt euer Baby?", "Bitte gebt einen Namen ein.");
-      return;
-    }
+    if (pregnancy.kind !== "pregnancy" || !canSave) return;
     setSaving(true);
     try {
       const id = newId();
@@ -75,25 +87,54 @@ function BirthForm({ pregnancy }: { pregnancy: Child }) {
         weightGrams: w ? Math.round(w > 100 ? w : w * 1000) : undefined,
         headCm: parseNumber(head),
       });
+      // Schutz vor ungespeicherten Änderungen aufheben, bevor navigiert wird
+      setSaved(true);
       celebrate();
+      announce(`Willkommen, ${baby.name}!`);
       await refresh(id);
-      router.navigate("/(tabs)/start");
+      setTimeout(() => router.navigate("/(tabs)/start"), 0);
     } catch {
       setSaving(false);
-      Alert.alert("Speichern hat nicht geklappt", "Bitte prüfe deine Verbindung und versuch es noch einmal.");
+      Alert.alert("Speichern hat nicht geklappt", "Bitte prüft eure Verbindung und versucht es noch einmal.");
     }
   }
 
-  return (
-    <View style={{ flex: 1 }}>
-      <Screen keyboard bottomSpace={60} contentStyle={{ maxWidth: 560, width: "100%", alignSelf: "center" }}>
-        <Header title="Baby ist da!" backIcon="close" />
+  const fill = solid(color);
 
-        <ClayCard color={colors.sunSoft} glow={colors.sun} style={styles.intro}>
-          <Text style={{ fontSize: 46 }}>🎉</Text>
-          <Text style={[type.body, { flex: 1 }]}>
-            Herzlichen Glückwunsch! Alle Momente aus der Schwangerschaft wandern mit ins Tagebuch — als Kapitel „Bevor du da warst“.
+  return (
+    <View style={styles.flex}>
+      <Screen keyboard blobs="none" contentStyle={styles.content}>
+        <Header
+          title="Baby ist da!"
+          backIcon="close"
+          right={
+            <Squish
+              onPress={handleSave}
+              disabled={!canSave}
+              haptic
+              accessibilityRole="button"
+              accessibilityLabel={name.trim() ? `${name.trim()} begrüßen` : "Begrüßen"}
+              accessibilityHint={name.trim() ? undefined : "Zuerst einen Namen eingeben"}
+              style={[styles.savePill, { backgroundColor: canSave || saving ? fill : colors.line }, canSave ? ctaShadow(color) : null]}
+            >
+              {saving ? (
+                <ActivityIndicator color={colors.onAccent} />
+              ) : (
+                <T variant="buttonSm" color={canSave ? colors.onAccent : colors.muted}>
+                  Begrüßen
+                </T>
+              )}
+            </Squish>
+          }
+        />
+
+        <ClayCard color={colors.sunSoft} style={styles.intro}>
+          <Text style={emoji(44)} accessibilityElementsHidden importantForAccessibility="no">
+            🎉
           </Text>
+          <T variant="body" style={styles.flex}>
+            Herzlichen Glückwunsch! Alle Momente aus der Schwangerschaft wandern mit ins Tagebuch — als Kapitel „Bevor du da warst“.
+          </T>
         </ClayCard>
 
         <Field label="Name" value={name} onChangeText={setName} placeholder="Wie heißt euer Baby?" autoCapitalize="words" maxLength={40} />
@@ -102,23 +143,23 @@ function BirthForm({ pregnancy }: { pregnancy: Child }) {
           <FieldLabel>Geboren am</FieldLabel>
           <DateField value={birthDate} onChange={setBirthDate} color={color} maximumDate={new Date()} />
           {premature && (
-            <Text style={[type.small, { marginTop: 10, paddingHorizontal: 4 }]}>
+            <T variant="small" style={styles.note}>
               {earlyDays} Tage vor dem Termin — wir rechnen die Phasen nach dem korrigierten Alter.
-            </Text>
+            </T>
           )}
         </View>
 
         <View style={styles.block}>
           <FieldLabel hint="Freiwillig — wird die erste Messung.">Bei der Geburt</FieldLabel>
           <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Field label="cm" value={height} onChangeText={setHeight} placeholder="52" keyboardType="decimal-pad" />
+            <View style={styles.flex}>
+              <Field label="Länge" unit="cm" value={height} onChangeText={setHeight} placeholder="–" keyboardType="decimal-pad" />
             </View>
-            <View style={{ flex: 1 }}>
-              <Field label="kg" value={weight} onChangeText={setWeight} placeholder="3,4" keyboardType="decimal-pad" />
+            <View style={styles.flex}>
+              <Field label="Gewicht" unit="kg" value={weight} onChangeText={setWeight} placeholder="–" keyboardType="decimal-pad" />
             </View>
-            <View style={{ flex: 1 }}>
-              <Field label="Kopf cm" value={head} onChangeText={setHead} placeholder="35" keyboardType="decimal-pad" />
+            <View style={styles.flex}>
+              <Field label="Kopf" unit="cm" value={head} onChangeText={setHead} placeholder="–" keyboardType="decimal-pad" />
             </View>
           </View>
         </View>
@@ -126,6 +167,7 @@ function BirthForm({ pregnancy }: { pregnancy: Child }) {
         <View style={styles.block}>
           <FieldLabel hint="Freiwillig">Geschlecht</FieldLabel>
           <ChoiceChips<Gender>
+            label="Geschlecht"
             options={[
               { value: "female", label: "Mädchen" },
               { value: "male", label: "Junge" },
@@ -143,25 +185,34 @@ function BirthForm({ pregnancy }: { pregnancy: Child }) {
         </View>
 
         <ClayButton
-          label={photo ? "Foto ausgewählt ✓" : "Erstes Foto wählen"}
-          icon="camera"
+          label={photo ? "Foto ausgewählt" : "Erstes Foto wählen"}
+          icon={photo ? "checkmark-circle" : "camera"}
           variant="soft"
           color={color}
           onPress={async () => {
             const [uri] = await pickImages({ square: true });
             if (uri) setPhoto(uri);
           }}
-          style={{ marginBottom: 14 }}
         />
-        <ClayButton label={`${name.trim() || "Baby"} begrüßen`} icon="heart" color={color} loading={saving} onPress={handleSave} />
       </Screen>
-      {party && <Confetti />}
+      <Confetti />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  intro: { flexDirection: "row", alignItems: "center", gap: 14, marginBottom: 22 },
-  block: { marginBottom: 20 },
-  row: { flexDirection: "row", gap: 10 },
+  flex: { flex: 1 },
+  content: { maxWidth: 560, width: "100%", alignSelf: "center" },
+  savePill: {
+    minHeight: size.touch,
+    minWidth: 96,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  intro: { flexDirection: "row", alignItems: "center", gap: space.md, marginBottom: space.lg },
+  block: { marginBottom: space.lg },
+  note: { marginTop: space.xs, paddingHorizontal: space.xxs },
+  row: { flexDirection: "row", gap: space.xs },
 });

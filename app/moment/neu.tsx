@@ -15,16 +15,18 @@ import {
   MilestoneCategory,
   PREGNANCY_CATEGORY_ORDER,
 } from "../../utils/milestoneData";
-import { colors, clay, fonts, radius, tint, type } from "../../utils/theme";
+import { colors, elevation, emoji, MAX_FONT_SCALE, radius, size, soft, solid, space, type } from "../../utils/theme";
 import { formatDateShort } from "../../utils/dates";
 import { Header, Screen } from "../../components/ui/Screen";
 import { ClayCard, Squish } from "../../components/ui/Clay";
+import { T } from "../../components/ui/T";
 
 export default function MomentPickerScreen() {
   const params = useLocalSearchParams<{ child?: string }>();
   const child = useChild(params.child);
   const { moments } = useChildData(child?.id);
   const [query, setQuery] = useState("");
+  const [focused, setFocused] = useState(false);
   const [category, setCategory] = useState<MilestoneCategory | "alle">("alle");
 
   const order = child?.kind === "pregnancy" ? PREGNANCY_CATEGORY_ORDER : CATEGORY_ORDER;
@@ -37,81 +39,97 @@ export default function MomentPickerScreen() {
 
   if (!child) return <Screen>{null}</Screen>;
 
+  // Der Katalog ist ein Modal: Der Editor ersetzt ihn, damit immer nur ein Modal offen ist.
   const openCustom = () =>
     router.replace(`/moment/bearbeiten?child=${child.id}${q ? `&title=${encodeURIComponent(query.trim())}` : ""}`);
+
+  // Schon festgehaltene Momente: Modal schließen und die Detailseite normal öffnen
+  const openEntry = (id: string) => {
+    router.dismiss();
+    router.push(`/moment/${id}?child=${child.id}`);
+  };
 
   return (
     <Screen keyboard>
       <Header title="Was habt ihr erlebt?" subtitle={child.name} backIcon="close" />
 
-      <View style={[styles.search, clay(colors.coral, "soft")]}>
-        <Ionicons name="search" size={18} color={colors.muted} />
+      <View style={[styles.search, focused && styles.searchFocused, elevation.pressed]}>
+        <Ionicons name="search" size={size.icon.sm} color={colors.muted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder="Suchen, z. B. Zahn oder Lachen"
-          placeholderTextColor={colors.muted}
+          placeholderTextColor={colors.faint}
+          maxFontSizeMultiplier={MAX_FONT_SCALE.body}
           style={styles.searchInput}
           accessibilityLabel="Momente durchsuchen"
           returnKeyType="search"
         />
         {query ? (
-          <Squish onPress={() => setQuery("")} accessibilityRole="button" accessibilityLabel="Suche leeren" hitSlop={8}>
-            <Ionicons name="close-circle" size={18} color={colors.muted} />
+          <Squish onPress={() => setQuery("")} accessibilityRole="button" accessibilityLabel="Suche leeren" hitSlop={space.sm}>
+            <Ionicons name="close-circle" size={size.icon.sm} color={colors.muted} />
           </Squish>
         ) : null}
       </View>
 
-      <ClayCard color={colors.coralSoft} glow={colors.coral} onPress={openCustom} style={styles.custom} accessibilityLabel="Eigenen Moment festhalten">
-        <View style={[styles.customIcon, { backgroundColor: colors.coral }]}>
-          <Ionicons name="sparkles" size={24} color={colors.onAccent} />
+      <ClayCard color={colors.coralSoft} onPress={openCustom} style={styles.custom} accessibilityLabel="Eigenen Moment festhalten">
+        <View style={[styles.customIcon, { backgroundColor: solid(colors.coral) }]}>
+          <Ionicons name="sparkles" size={size.icon.md} color={colors.onAccent} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={type.h3}>{q ? `„${query.trim()}“ festhalten` : "Eigener Moment"}</Text>
-          <Text style={type.small}>Alles, was euch wichtig ist — auch ein ganz normaler schöner Tag.</Text>
+          <T variant="h3">{q ? `„${query.trim()}“ festhalten` : "Eigener Moment"}</T>
+          <T variant="small">Alles, was euch wichtig ist — auch ein ganz normaler schöner Tag.</T>
         </View>
-        <Ionicons name="arrow-forward" size={22} color={colors.coral} />
+        <Ionicons name="arrow-forward" size={size.icon.md} color={solid(colors.coral)} />
       </ClayCard>
 
       {order.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.catRow}>
-          <CatChip label="Alle" emoji="🌼" active={category === "alle"} color={colors.ink} onPress={() => setCategory("alle")} />
+          <CatChip label="Alle" emoji="🌼" active={category === "alle"} fill={colors.ink} onPress={() => setCategory("alle")} />
           {order.map((c) => (
-            <CatChip key={c} label={CATEGORY_LABELS[c]} emoji={CATEGORY_EMOJIS[c]} active={category === c} color={CATEGORY_COLORS[c]} onPress={() => setCategory(c)} />
+            <CatChip
+              key={c}
+              label={CATEGORY_LABELS[c]}
+              emoji={CATEGORY_EMOJIS[c]}
+              active={category === c}
+              fill={solid(CATEGORY_COLORS[c])}
+              onPress={() => setCategory(c)}
+            />
           ))}
         </ScrollView>
       )}
 
       {sections.map((s) => (
-        <View key={s.category} style={{ marginTop: 18 }}>
-          <Text style={[type.h3, { marginBottom: 10 }]}>
+        <View key={s.category} style={styles.section}>
+          <T variant="h3" accessibilityRole="header" style={styles.sectionTitle}>
             {CATEGORY_EMOJIS[s.category]}  {CATEGORY_LABELS[s.category]}
-          </Text>
+          </T>
           <View style={styles.grid}>
             {s.items.map((m) => {
               const entry = recorded.get(m.id);
               const color = CATEGORY_COLORS[m.category];
+              const fg = solid(color);
               return (
                 <Squish
                   key={m.id}
-                  onPress={() =>
-                    entry
-                      ? router.replace(`/moment/${entry.id}?child=${child.id}`)
-                      : router.replace(`/moment/bearbeiten?child=${child.id}&milestone=${m.id}`)
-                  }
+                  onPress={() => (entry ? openEntry(entry.id) : router.replace(`/moment/bearbeiten?child=${child.id}&milestone=${m.id}`))}
                   accessibilityRole="button"
-                  accessibilityLabel={entry ? `${m.title}, festgehalten am ${formatDateShort(entry.happenedOn)}` : m.title}
-                  style={[styles.tile, entry ? { backgroundColor: tint(color, 0.14) } : null, clay(color, "soft")]}
+                  accessibilityLabel={entry ? `${m.title}, festgehalten am ${formatDateShort(entry.happenedOn)}` : `${m.title} festhalten`}
+                  style={[styles.tile, { backgroundColor: entry ? soft(color) : colors.surface }, elevation.raised]}
                 >
-                  <View style={[styles.tileEmoji, { backgroundColor: entry ? colors.surface : tint(color, 0.14) }]}>
-                    <Text style={{ fontSize: 22 }}>{m.emoji}</Text>
+                  <View style={[styles.tileEmoji, { backgroundColor: entry ? colors.surface : soft(color) }]}>
+                    <Text style={emoji(24)}>{m.emoji}</Text>
                   </View>
-                  <Text style={styles.tileTitle} numberOfLines={2}>
+                  <T variant="h3" numberOfLines={2}>
                     {m.title}
-                  </Text>
+                  </T>
                   <View style={styles.tileFoot}>
-                    <Ionicons name={entry ? "heart" : "add"} size={13} color={color} />
-                    <Text style={[styles.tileFootText, { color }]}>{entry ? formatDateShort(entry.happenedOn) : "festhalten"}</Text>
+                    <Ionicons name={entry ? "heart" : "add"} size={14} color={fg} />
+                    <T variant="caption" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
+                      {entry ? formatDateShort(entry.happenedOn) : "festhalten"}
+                    </T>
                   </View>
                 </Squish>
               );
@@ -121,24 +139,29 @@ export default function MomentPickerScreen() {
       ))}
 
       {sections.length === 0 && (
-        <Text style={[type.body, { textAlign: "center", marginTop: 24 }]}>
-          Nichts Passendes im Katalog — halte es einfach als eigenen Moment fest.
-        </Text>
+        <T variant="body" align="center" style={styles.empty}>
+          Nichts Passendes im Katalog — haltet es einfach als eigenen Moment fest.
+        </T>
       )}
     </Screen>
   );
 }
 
-function CatChip({ label, emoji, active, color, onPress }: { label: string; emoji: string; active: boolean; color: string; onPress: () => void }) {
+function CatChip({ label, emoji: icon, active, fill, onPress }: { label: string; emoji: string; active: boolean; fill: string; onPress: () => void }) {
   return (
     <Squish
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      style={[styles.catChip, active ? { backgroundColor: color } : null]}
+      style={[styles.catChip, active ? { backgroundColor: fill, borderColor: fill } : null]}
     >
-      <Text style={{ fontSize: 15 }}>{emoji}</Text>
-      <Text style={[styles.catText, active && { color: colors.onAccent }]}>{label}</Text>
+      <Text style={emoji(16)} accessibilityElementsHidden importantForAccessibility="no">
+        {icon}
+      </Text>
+      <T variant="chip" color={active ? colors.onAccent : colors.ink}>
+        {label}
+      </T>
     </Squish>
   );
 }
@@ -147,39 +170,44 @@ const styles = StyleSheet.create({
   search: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.surface,
-    borderRadius: radius.pill,
-    paddingHorizontal: 16,
-    height: 50,
-    marginBottom: 16,
+    gap: space.xs,
+    minHeight: size.input,
+    backgroundColor: colors.surfaceSoft,
+    borderRadius: radius.md,
+    borderWidth: 2,
+    borderColor: colors.line,
+    paddingHorizontal: space.md,
+    marginBottom: space.md,
   },
-  searchInput: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: colors.ink, height: 50 },
-  custom: { flexDirection: "row", alignItems: "center", gap: 14 },
-  customIcon: { width: 48, height: 48, borderRadius: 18, alignItems: "center", justifyContent: "center" },
-  catScroll: { marginHorizontal: -20, marginTop: 18, flexGrow: 0 },
-  catRow: { paddingHorizontal: 20, gap: 8 },
+  searchFocused: { borderColor: colors.peach, backgroundColor: colors.surface },
+  searchInput: { ...type.bodyStrong, flex: 1, color: colors.ink, minHeight: size.input - 4, paddingVertical: space.xs },
+  custom: { flexDirection: "row", alignItems: "center", gap: space.sm },
+  customIcon: { width: size.touch + 4, height: size.touch + 4, borderRadius: radius.sm, alignItems: "center", justifyContent: "center" },
+  catScroll: { marginHorizontal: -space.gutter, marginTop: space.lg, flexGrow: 0 },
+  catRow: { paddingHorizontal: space.gutter, gap: space.xs },
   catChip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: space.xs,
+    minHeight: size.chip + 4,
     backgroundColor: colors.surface,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    height: 42,
+    borderWidth: 2,
+    borderColor: colors.line,
+    paddingHorizontal: space.md,
   },
-  catText: { fontFamily: fonts.bodyHeavy, fontSize: 14, color: colors.ink },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  section: { marginTop: space.lg },
+  sectionTitle: { marginBottom: space.sm },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   tile: {
-    width: "47%",
+    flexBasis: "45%",
     flexGrow: 1,
-    backgroundColor: colors.surface,
+    maxWidth: "50%",
     borderRadius: radius.lg,
-    padding: 14,
+    padding: space.md,
     minHeight: 136,
   },
-  tileEmoji: { width: 44, height: 44, borderRadius: 15, alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  tileTitle: { fontFamily: fonts.display, fontSize: 15.5, lineHeight: 20, color: colors.ink },
-  tileFoot: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: "auto", paddingTop: 8 },
-  tileFootText: { fontFamily: fonts.bodyHeavy, fontSize: 12 },
+  tileEmoji: { width: size.touch, height: size.touch, borderRadius: radius.sm, alignItems: "center", justifyContent: "center", marginBottom: space.sm },
+  tileFoot: { flexDirection: "row", alignItems: "center", gap: space.xxs, marginTop: "auto", paddingTop: space.xs },
+  empty: { marginTop: space.lg },
 });

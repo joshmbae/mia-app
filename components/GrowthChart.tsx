@@ -3,9 +3,10 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { colors, fonts, tint } from "../utils/theme";
+import { colors, emoji as emojiStyle, radius, soft, space, tint } from "../utils/theme";
 import { parseISODate } from "../utils/dates";
 import { Squish } from "./ui/Clay";
+import { T } from "./ui/T";
 
 export interface ChartPoint {
   date: string;
@@ -24,6 +25,7 @@ const H = 200;
 const PAD_X = 14;
 const PAD_TOP = 34;
 const PAD_BOTTOM = 14;
+const BUBBLE = 32;
 
 export function GrowthChart({
   points,
@@ -33,6 +35,7 @@ export function GrowthChart({
   startLabel,
   endLabel,
   onMomentPress,
+  summary,
 }: {
   points: ChartPoint[];
   moments: ChartMoment[];
@@ -41,6 +44,8 @@ export function GrowthChart({
   startLabel: string;
   endLabel: string;
   onMomentPress: (id: string) => void;
+  /** Kurze Zusammenfassung für Screenreader, z. B. "Größe: zuletzt 74 cm am 2. Oktober" */
+  summary?: string;
 }) {
   if (points.length === 0) return null;
 
@@ -84,8 +89,8 @@ export function GrowthChart({
   const shown = points.length > 1 ? moments.filter((m) => t(m.date) >= t0 && t(m.date) <= t1).slice(-8) : [];
 
   return (
-    <View style={{ width, height: H + 22 }}>
-      <Svg width={width} height={H} accessibilityLabel="Wachstumskurve">
+    <View style={{ width }}>
+      <Svg width={width} height={H} accessible accessibilityRole="image" accessibilityLabel={summary ? `Wachstumskurve. ${summary}` : "Wachstumskurve"}>
         <Path d={area} fill={tint(color, 0.16)} />
         <Path d={line} fill="none" stroke={color} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
         {xy.map((p, i) => {
@@ -111,16 +116,23 @@ export function GrowthChart({
             key={m.id}
             onPress={() => onMomentPress(m.id)}
             accessibilityRole="button"
-            accessibilityLabel={m.title}
-            style={[styles.bubble, { left: cx - 15, top: Math.max(0, cy - 15), backgroundColor: tint(m.color, 0.9) }]}
+            accessibilityLabel={`Moment: ${m.title}`}
+            hitSlop={6}
+            style={[styles.bubble, { left: cx - BUBBLE / 2, top: Math.max(0, cy - BUBBLE / 2), backgroundColor: soft(m.color), borderColor: m.color }]}
           >
-            <Text style={{ fontSize: 13 }}>{m.emoji}</Text>
+            <Text style={emojiStyle(16)} accessibilityElementsHidden importantForAccessibility="no">
+              {m.emoji}
+            </Text>
           </Squish>
         );
       })}
       <View style={styles.axis}>
-        <Text style={styles.axisText}>{startLabel}</Text>
-        <Text style={styles.axisText}>{endLabel}</Text>
+        <T variant="caption" color={colors.inkSoft}>
+          {startLabel}
+        </T>
+        <T variant="caption" color={colors.inkSoft}>
+          {endLabel}
+        </T>
       </View>
     </View>
   );
@@ -129,14 +141,12 @@ export function GrowthChart({
 const styles = StyleSheet.create({
   bubble: {
     position: "absolute",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: BUBBLE,
+    height: BUBBLE,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2.5,
-    borderColor: colors.surface,
+    borderWidth: 2,
   },
-  axis: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4, marginTop: 4 },
-  axisText: { fontFamily: fonts.bodyBold, fontSize: 11.5, color: colors.muted },
+  axis: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: space.xxs, marginTop: space.xxs },
 });

@@ -76,9 +76,9 @@ export interface Chapter {
 export function chapterFor(child: Child, dateISO: string): Chapter {
   if (child.kind === "pregnancy") {
     const { week } = pregnancyWeek(child.profile.dueDate, dateISO);
-    if (week < 13) return { key: "t1", emoji: "🌱", title: "Erstes Trimester", subtitle: "SSW 1–12" };
-    if (week < 27) return { key: "t2", emoji: "🌿", title: "Zweites Trimester", subtitle: "SSW 13–26" };
-    return { key: "t3", emoji: "🌸", title: "Drittes Trimester", subtitle: "SSW 27–40" };
+    if (week < 13) return { key: "t1", emoji: "🌱", title: "Erstes Trimester", subtitle: "ab dem positiven Test" };
+    if (week < 27) return { key: "t2", emoji: "🌿", title: "Zweites Trimester", subtitle: "ab SSW 13" };
+    return { key: "t3", emoji: "🌸", title: "Drittes Trimester", subtitle: "ab SSW 27" };
   }
   const birth = child.profile.birthDate.slice(0, 10);
   if (dateISO < birth) return { key: "before", emoji: "🤰", title: "Bevor du da warst", subtitle: "Im Bauch" };
@@ -87,7 +87,7 @@ export function chapterFor(child: Child, dateISO: string): Chapter {
   const years = Math.floor(
     (parseISODate(dateISO).getTime() - parseISODate(birth).getTime()) / (365.25 * 24 * 60 * 60 * 1000)
   );
-  return { key: `year-${years}`, emoji: "🎈", title: `${years + 1}. Lebensjahr`, subtitle: `${years} Jahre alt` };
+  return { key: `year-${years}`, emoji: "🎈", title: `${years + 1}. Lebensjahr`, subtitle: `ab ${years} Jahren` };
 }
 
 /** Momente nach Kapiteln gruppiert (für das Buch) */

@@ -17,7 +17,7 @@ export interface DevelopmentPhase {
   // Zeitraum
   weeksFrom: number;        // Alter in Wochen ab Geburt (nicht ET)
   weeksTo: number;
-  ageLabel: string;         // Anzeige für UI, z. B. "Woche 1–2"
+  ageLabel: string;         // Anzeige für UI: nur der Beginn ("ab 3 Monaten"), bewusst kein Zeitfenster
 
   // Inhalt
   title: string;            // Kurzer Name der Phase
@@ -38,7 +38,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "w01-02",
     weeksFrom: 0,
     weeksTo: 2,
-    ageLabel: "Woche 1–2",
+    ageLabel: "ab der Geburt",
     title: "Ankommen in der Welt",
     emoji: "🌱",
     summary:
@@ -59,7 +59,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "w02-06",
     weeksFrom: 2,
     weeksTo: 6,
-    ageLabel: "Woche 2–6",
+    ageLabel: "ab 2 Wochen",
     title: "Erste Verbindungen",
     emoji: "🤍",
     summary:
@@ -75,7 +75,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Der Weinpeak bei Woche 6 überrascht viele Eltern, die dachten, es wird langsam besser. Wenn du nachts alleine bist und das Baby nicht aufhört zu weinen: Baby sicher ablegen, kurz in ein anderes Zimmer gehen, durchatmen. Das ist Selbstfürsorge, kein Versagen.",
     developmentHint:
-      "Intensive Entwicklungsphase (Woche 4–6): Das Gehirn verarbeitet die neue Umgebung intensiv — alle Sinne werden aktiver. Mehr Quengeln, Schlafschwierigkeiten und Nähebedarf in dieser Zeit sind biologisch normal. Quelle: AAP Developmental Surveillance.",
+      "Intensive Entwicklungsphase (oft ab Woche 4): Das Gehirn verarbeitet die neue Umgebung intensiv — alle Sinne werden aktiver. Mehr Quengeln, Schlafschwierigkeiten und Nähebedarf in dieser Zeit sind biologisch normal. Quelle: AAP Developmental Surveillance.",
   },
 
   // ─── MONAT 1–3 ─────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "w06-09",
     weeksFrom: 6,
     weeksTo: 9,
-    ageLabel: "Woche 6–9",
+    ageLabel: "ab 6 Wochen",
     title: "Das erste Lächeln",
     emoji: "😊",
     summary:
@@ -104,7 +104,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "w09-13",
     weeksFrom: 9,
     weeksTo: 13,
-    ageLabel: "Woche 9–13",
+    ageLabel: "ab 9 Wochen",
     title: "Entdecken & Staunen",
     emoji: "🔍",
     summary:
@@ -120,7 +120,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Jetzt ist ein guter Zeitpunkt, eine sanfte Schlaf-Routine einzuführen — nicht als strenger Zeitplan, sondern als Signale: Baden → Stillen/Füttern → Schlaflied. Vorhersehbarkeit hilft dem Gehirn, sich zu beruhigen.",
     developmentHint:
-      "Intensive Entwicklungsphase (Woche 7–10): Das Gehirn baut neuronale Vernetzungen für Mustererkennung auf — das Baby erkennt Muster in Bildern, Klängen und Bewegungen. Mehr Quengeln und Nähebedarf sind typisch. Quelle: AAP.",
+      "Intensive Entwicklungsphase (oft ab Woche 7): Das Gehirn baut neuronale Vernetzungen für Mustererkennung auf — das Baby erkennt Muster in Bildern, Klängen und Bewegungen. Mehr Quengeln und Nähebedarf sind typisch. Quelle: AAP.",
   },
 
   // ─── MONAT 3–6 ─────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m03-04",
     weeksFrom: 13,
     weeksTo: 18,
-    ageLabel: "Monat 3–4",
+    ageLabel: "ab 3 Monaten",
     title: "Hände entdecken",
     emoji: "✋",
     summary:
@@ -145,14 +145,14 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Die Schlafregression um Monat 4 trifft viele Eltern unvorbereitet — gerade wenn es endlich besser geworden war. Sie ist biologisch bedingt: Schlafzyklen reifen, das Baby wacht in leichteren Phasen öfter auf. Das geht vorbei. Konsistenz in der Routine hilft.",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 3–5): Das Gehirn verarbeitet Übergänge — Licht, Klang, Bewegung, Stimmungen werden als Kontinuum wahrgenommen. Mehr Quengeln ist typisch. Quelle: AAP.",
+      "Intensive Entwicklungsphase (oft ab Monat 3): Das Gehirn verarbeitet Übergänge — Licht, Klang, Bewegung, Stimmungen werden als Kontinuum wahrgenommen. Mehr Quengeln ist typisch. Quelle: AAP.",
   },
 
   {
     id: "m04-06",
     weeksFrom: 18,
     weeksTo: 27,
-    ageLabel: "Monat 4–6",
+    ageLabel: "ab 4 Monaten",
     title: "Entdecker auf dem Bauch",
     emoji: "🚀",
     summary:
@@ -168,7 +168,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Wenn du noch stillst und Beikost einführst: Beides kombinieren ist problemlos, solange du willst. Die WHO empfiehlt Stillen bis mindestens 6 Monate, gerne länger. Es gibt kein Richtig oder Falsch.",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 4–6): Baby versteht Ursache und Wirkung bewusster, Objektpermanenz beginnt. Das Kind merkt: Dinge existieren weiter, auch wenn sie nicht sichtbar sind. Quelle: AAP, NIH StatPearls.",
+      "Intensive Entwicklungsphase (oft ab Monat 4): Baby versteht Ursache und Wirkung bewusster, Objektpermanenz beginnt. Das Kind merkt: Dinge existieren weiter, auch wenn sie nicht sichtbar sind. Quelle: AAP, NIH StatPearls.",
   },
 
   // ─── MONAT 6–9 ─────────────────────────────────────────────────────────────
@@ -177,7 +177,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m06-07",
     weeksFrom: 27,
     weeksTo: 31,
-    ageLabel: "Monat 6–7",
+    ageLabel: "ab 6 Monaten",
     title: "Nähe & Fremdeln",
     emoji: "💞",
     summary:
@@ -193,14 +193,14 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Fremdeln ist für Großeltern und Verwandte oft schmerzhaft. Erkläre ihnen: Das ist ein Zeichen gesunder Bindung, kein Persönlichkeitsproblem des Kindes. Es geht vorbei — Geduld und kein Zwang helfen.",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 6–7): Baby versteht räumliche Beziehungen und Entfernungen. Trennungsangst und Objektpermanenz entstehen gleichzeitig. Quelle: AAP, NIH StatPearls.",
+      "Intensive Entwicklungsphase (oft ab Monat 6): Baby versteht räumliche Beziehungen und Entfernungen. Trennungsangst und Objektpermanenz entstehen gleichzeitig. Quelle: AAP, NIH StatPearls.",
   },
 
   {
     id: "m07-09",
     weeksFrom: 31,
     weeksTo: 39,
-    ageLabel: "Monat 7–9",
+    ageLabel: "ab 7 Monaten",
     title: "Mobil & neugierig",
     emoji: "🐛",
     summary:
@@ -223,7 +223,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m09-12",
     weeksFrom: 39,
     weeksTo: 52,
-    ageLabel: "Monat 9–12",
+    ageLabel: "ab 9 Monaten",
     title: "Verstehen & Entdecken",
     emoji: "💡",
     summary:
@@ -239,7 +239,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Der erste Geburtstag ist auch dein Jahrestag als Elternteil. Ein Jahr durchgemacht, gewachsen, nicht aufgegeben — das verdient echte Anerkennung, auch von dir selbst. Nimm dir einen Moment: Was hat dich überrascht? Was hat dich stolz gemacht?",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 9–10): Baby ordnet die Welt in Kategorien — alle Hunde sind 'Hunde'. Konstruktives Spielen (Stapeln, Sortieren) ist ein Ausdruck dieser kognitiven Reifung. Quelle: NIH StatPearls, AAP.",
+      "Intensive Entwicklungsphase (oft ab Monat 9): Baby ordnet die Welt in Kategorien — alle Hunde sind 'Hunde'. Konstruktives Spielen (Stapeln, Sortieren) ist ein Ausdruck dieser kognitiven Reifung. Quelle: NIH StatPearls, AAP.",
   },
 
   // ─── MONAT 12–18 ───────────────────────────────────────────────────────────
@@ -248,7 +248,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m12-15",
     weeksFrom: 52,
     weeksTo: 65,
-    ageLabel: "Monat 12–15",
+    ageLabel: "ab 1 Jahr",
     title: "Vom Baby zum Kleinkind",
     emoji: "👣",
     summary:
@@ -264,14 +264,14 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "Trotz ist kein böses Verhalten — es ist Selbstausdruck ohne sprachliche Mittel. Das Kind ist frustriert, nicht manipulativ. Ruhig bleiben und die Emotion benennen ('Du bist gerade wütend, weil...') hilft langfristig.",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 12–14): Kind versteht, dass es verschiedene Wege zum gleichen Ziel gibt — es plant und wählt Strategien (Piaget: präoperationale Phase beginnt). Quelle: NIH StatPearls, AAP.",
+      "Intensive Entwicklungsphase (oft ab Monat 12): Kind versteht, dass es verschiedene Wege zum gleichen Ziel gibt — es plant und wählt Strategien (Piaget: präoperationale Phase beginnt). Quelle: NIH StatPearls, AAP.",
   },
 
   {
     id: "m15-18",
     weeksFrom: 65,
     weeksTo: 78,
-    ageLabel: "Monat 15–18",
+    ageLabel: "ab 15 Monaten",
     title: "Sprache & Selbstwille",
     emoji: "💬",
     summary:
@@ -294,7 +294,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m18-21",
     weeksFrom: 78,
     weeksTo: 91,
-    ageLabel: "Monat 18–21",
+    ageLabel: "ab 1½ Jahren",
     title: "Ich-Phase beginnt",
     emoji: "🙋",
     summary:
@@ -310,14 +310,14 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     forParents:
       "\"Ich mache das falsch\" ist in dieser Phase fast nie richtig. Liebevolles, konsequentes Elternsein — auch wenn es sich chaotisch anfühlt — ist genug. Kein Elternteil ist immer geduldig. Das Ziel ist nicht Perfektion.",
     developmentHint:
-      "Intensive Entwicklungsphase (Monat 18–21): Kind versteht zunehmend abstrakte Prinzipien — fair/unfair, richtig/falsch. Regelverständnis und Autonomieanspruch wachsen gleichzeitig. Quelle: Piaget, AAP.",
+      "Intensive Entwicklungsphase (oft ab Monat 18): Kind versteht zunehmend abstrakte Prinzipien — fair/unfair, richtig/falsch. Regelverständnis und Autonomieanspruch wachsen gleichzeitig. Quelle: Piaget, AAP.",
   },
 
   {
     id: "m21-24",
     weeksFrom: 91,
     weeksTo: 104,
-    ageLabel: "Monat 21–24",
+    ageLabel: "ab 21 Monaten",
     title: "Wörter-Welt",
     emoji: "🌊",
     summary:
@@ -340,7 +340,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m24-30",
     weeksFrom: 104,
     weeksTo: 130,
-    ageLabel: "Monat 24–30",
+    ageLabel: "ab 2 Jahren",
     title: "Kleine Persönlichkeit",
     emoji: "🌟",
     summary:
@@ -361,7 +361,7 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
     id: "m30-36",
     weeksFrom: 130,
     weeksTo: 156,
-    ageLabel: "Monat 30–36",
+    ageLabel: "ab 2½ Jahren",
     title: "Eigene Welt",
     emoji: "🏡",
     summary:

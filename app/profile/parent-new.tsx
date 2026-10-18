@@ -68,10 +68,10 @@ export default function NewParentProfileScreen() {
           ))}
         </View>
 
-        {/* Beschreibung für Mia */}
-        <Text style={styles.label}>Für Mia — freie Beschreibung</Text>
+        {/* Notizen */}
+        <Text style={styles.label}>Notizen</Text>
         <Text style={styles.fieldHint}>
-          Was soll Mia über dich wissen? Z. B. wie es dir gerade geht, deine größten Sorgen oder was dir besonders wichtig ist.
+          Was du festhalten möchtest — z. B. wie es dir gerade geht.
         </Text>
         <TextInput
           style={[styles.input, styles.inputMultiline]}

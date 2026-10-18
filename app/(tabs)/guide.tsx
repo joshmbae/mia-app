@@ -29,76 +29,56 @@ const GROUPS: FeatureGroup[] = [
         emoji: "👶",
         title: "Kindprofil anlegen",
         summary:
-          "Tippe auf dem Home-Tab auf das + und lege ein Profil mit Name, Geburtsdatum, Geschlecht und Ernährungsweise an. Optional: Foto, Frühgeburt-Info, Geschwister und medizinische Besonderheiten.",
-        tip: "Je vollständiger das Profil, desto gezielter antwortet Mia.",
+          "Tippe auf dem Home-Tab auf „Kind hinzufügen“ und lege ein Profil mit Name, Geburtsdatum, Geschlecht und Ernährungsweise an. Optional: Foto, Frühgeburt-Info, Geschwister und medizinische Besonderheiten.",
       },
       {
         emoji: "🤰",
         title: "Schwangerschaftsprofil",
         summary:
-          "Du kannst auch ein Schwangerschaftsprofil erstellen. Gib den errechneten Geburtstermin ein und Mia begleitet dich mit wöchentlichen Entwicklungsinfos, Körperveränderungen und Tipps.",
+          "Du kannst auch ein Schwangerschaftsprofil erstellen. Gib den errechneten Geburtstermin ein und du bekommst wöchentliche Entwicklungsinfos, Körperveränderungen und Tipps. Ist das Baby da, wird daraus mit einem Tipp ein Kindprofil.",
       },
       {
         emoji: "👨‍👩‍👧",
         title: "Familienprofil",
         summary:
-          'Unter "Familie" kannst du ein Elternprofil anlegen und mehrere Kinder- oder Schwangerschaftsprofile verwalten. Alle Profile sind lokal auf deinem Gerät gespeichert.',
+          'Unter "Familie" kannst du Elternprofile anlegen und mehrere Kinder- oder Schwangerschaftsprofile verwalten. Alle, die sich mit eurem Familien-Login anmelden, sehen dieselben Daten.',
       },
     ],
   },
   {
-    heading: "Chat mit Mia",
-    color: "#7B9EC8",
+    heading: "Tagebuch",
+    color: "#F07B6E",
     items: [
       {
-        emoji: "💬",
-        title: "Gespräche starten",
+        emoji: "✨",
+        title: "Momente festhalten",
         summary:
-          "Über den Chat-Tab oder direkt im Kindprofil kannst du ein neues Gespräch mit Mia beginnen. Mia kennt das ausgewählte Kind und antwortet immer bezogen auf sein Alter und seine Situation.",
-        tip: 'Frag ruhig konkret: "Warum schläft Leon seit 3 Tagen schlechter?" statt "Schlafprobleme".',
+          "Im Kindprofil unter „Tagebuch“ findest du schöne Momente zum Antippen — vom ersten Bad bis zu den ersten Wörtern — oder legst ganz eigene an. Zu jedem Moment kannst du ein Datum, Fotos und ein paar Zeilen speichern.",
+        tip: "Es gibt keine Reihenfolge und keinen Zeitplan — jedes Kind hat sein eigenes Tempo.",
       },
       {
-        emoji: "🧠",
-        title: "Mias Gedächtnis",
+        emoji: "🧵",
+        title: "Zeitstrahl",
         summary:
-          "Mia merkt sich wichtige Infos aus dem Gespräch automatisch als Erinnerungen — z. B. Schlafgewohnheiten oder Ernährungsvorlieben. Diese Erinnerungen fließen in alle zukünftigen Chats ein.",
+          "Der Zeitstrahl zeigt alle Momente von der Geburt bis heute — in den ersten drei Jahren nach Phasen sortiert, danach nach Lebensjahren.",
       },
       {
-        emoji: "🌩️",
-        title: "Entwicklungsschübe im Chat",
+        emoji: "📖",
+        title: "Als Buch exportieren",
         summary:
-          "Wenn dein Kind gerade einen Entwicklungsschub macht, weiß Mia das und berücksichtigt es in ihren Antworten — z. B. warum dein Baby gerade quengeliger ist als sonst.",
-      },
-    ],
-  },
-  {
-    heading: "Entwicklung & Meilensteine",
-    color: "#4A7C6F",
-    items: [
-      {
-        emoji: "🌱",
-        title: "Diese Woche",
-        summary:
-          'Im Profil unter "Entwicklung" -> "Diese Woche" siehst du, was dein Kind in dieser Entwicklungsphase typischerweise kann, welches Verhalten normal ist, wie du es fördern kannst — und wann du zum Kinderarzt solltest.',
+          "Über „Buch“ oben im Tagebuch wird aus euren Momenten ein kleines Fotobuch im A5-Format (PDF) — zum Teilen, Drucken oder Verschenken.",
       },
       {
-        emoji: "⭐",
-        title: "Meilensteine",
+        emoji: "🧭",
+        title: "Phasen",
         summary:
-          'Im Tab "Meilensteine" siehst du alle Entwicklungsschritte nach Bereichen (Motorik, Sprache, Soziales, Kognition). Aktive Meilensteine sind jetzt oder in den nächsten 4 Wochen typisch. Zukünftige werden ausgegraut angezeigt.',
-        tip: 'Setze einen Meilenstein auf "Geschafft!" — Konfetti inklusive 🎉',
-      },
-      {
-        emoji: "🔢",
-        title: "Fortschritt & Schnell entwickelt",
-        summary:
-          'Der Fortschrittsbalken zeigt, wie viele aktive Meilensteine dein Kind bereits erreicht hat. Wenn es mehr schafft als aktuell erwartet, erscheint "✨ Schnell entwickelt!".',
+          "Im Tab „Phasen“ liest du, was viele Familien in einer Zeit ungefähr erleben, dazu kleine Ideen und ein paar Worte für dich als Elternteil. Keine Checkliste — nur Orientierung.",
       },
       {
         emoji: "🗓️",
         title: "Schwangerschaft: Diese Woche & Timeline",
         summary:
-          "Im Schwangerschaftsprofil gibt es ebenfalls einen Entwicklungsbereich: Babygröße und -gewicht, Körperveränderungen, Was ist normal, Warnzeichen, Todos und eine Timeline aller Schwangerschaftsphasen.",
+          "Im Schwangerschaftsprofil gibt es einen eigenen Entwicklungsbereich: Babygröße und -gewicht, Körperveränderungen, was normal ist, Warnzeichen, To-dos und eine Timeline aller Schwangerschaftsphasen.",
       },
     ],
   },
@@ -110,40 +90,21 @@ const GROUPS: FeatureGroup[] = [
         emoji: "📈",
         title: "Gewichtsverlauf",
         summary:
-          "Erfasse das Gewicht deines Kindes über die Zeit. Die Kurve wird zusammen mit den WHO-Referenzperzentilen (P3, P50, P97) angezeigt. Mia bewertet die Zunahme und gibt einen Hinweis, wenn sie auffällig ist.",
+          "Erfasse das Gewicht deines Kindes über die Zeit. Die Kurve wird zusammen mit den WHO-Referenzperzentilen (P3, P50, P97) angezeigt.",
         tip: "Zugänglich über Kindprofil → Tracker → Gewichtsverlauf.",
       },
       {
         emoji: "🤱",
         title: "Still & Schlaf Tracker",
         summary:
-          "Starte einen Timer für Stillen (links/rechts), Flasche oder Schlaf (Nap/Nacht). Mia sieht die letzten 24 Stunden und kann gezielt auf Schlaf- und Fütterungsfragen eingehen.",
-        tip: "Den Tab-Tracker findest du auch im Hauptmenü — dort kannst du zwischen mehreren Kindern wechseln.",
+          "Starte einen Timer für Stillen (links/rechts), Flasche oder Schlaf (Nap/Nacht). Auf der Startseite siehst du, wann zuletzt gestillt und geschlafen wurde.",
+        tip: "Den Tracker findest du auch im Hauptmenü — dort kannst du zwischen mehreren Kindern wechseln.",
       },
       {
         emoji: "📊",
         title: "Tages- & Wochenübersicht",
         summary:
           'Im Tracker siehst du eine Zusammenfassung für heute (Fütterungen, Schlafzeit) sowie Tabs für "Heute" und "Diese Woche" mit allen aufgezeichneten Einträgen. Einträge können per Wischgeste gelöscht werden.',
-      },
-    ],
-  },
-  {
-    heading: "Erinnerungen",
-    color: "#C8A96E",
-    items: [
-      {
-        emoji: "🧠",
-        title: "Automatische Erinnerungen",
-        summary:
-          "Mia speichert wichtige Erkenntnisse aus euren Gesprächen automatisch — zum Beispiel Schlafrituale, Allergien oder besondere Verhaltensweisen. So muss du nicht jedes Mal neu erklären.",
-      },
-      {
-        emoji: "✏️",
-        title: "Eigene Erinnerungen",
-        summary:
-          'Im Kindprofil unter "Erinnerungen" kannst du selbst Notizen anlegen und kategorisieren (Schlaf, Ernährung, Gesundheit, Entwicklung, Stimmung, Allgemein). Erinnerungen werden per Wischgeste gelöscht.',
-        tip: 'Der Tab "Gedächtnis" zeigt alle Erinnerungen über alle Kinder hinweg.',
       },
     ],
   },
@@ -210,7 +171,7 @@ export default function GuideScreen() {
         ))}
 
         <Text style={styles.footer}>
-          Mia ist eine KI-Assistentin und kein Ersatz für ärztlichen Rat. Bei medizinischen Fragen wende dich immer an deinen Kinderarzt.
+          Mia ersetzt keinen ärztlichen Rat. Bei medizinischen Fragen wende dich immer an deine Hebamme oder deinen Kinderarzt.
         </Text>
 
         <TouchableOpacity

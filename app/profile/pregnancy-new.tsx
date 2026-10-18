@@ -126,8 +126,8 @@ export default function NewPregnancyScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Beschreibung für Mia */}
-        <Text style={styles.label}>Für Mia — freie Beschreibung</Text>
+        {/* Notizen */}
+        <Text style={styles.label}>Notizen</Text>
         <Text style={styles.fieldHint}>
           Was beschäftigt dich gerade? Z. B. Beschwerden, Sorgen, besondere Umstände.
         </Text>

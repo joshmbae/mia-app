@@ -26,29 +26,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
-        options={{
-          title: "Chat",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="chatbubbles" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="tracker"
         options={{
           title: "Tracker",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="timer-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="memories"
-        options={{
-          title: "Gedächtnis",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="star" size={size} color={color} />
           ),
         }}
       />

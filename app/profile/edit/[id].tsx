@@ -112,7 +112,7 @@ export default function EditProfileScreen() {
   function handleDelete() {
     Alert.alert(
       "Profil löschen?",
-      "Alle Chats und Erinnerungen werden dauerhaft gelöscht.",
+      "Das Profil, das Tagebuch und alle Einträge werden dauerhaft gelöscht.",
       [
         { text: "Abbrechen", style: "cancel" },
         {
@@ -335,9 +335,9 @@ export default function EditProfileScreen() {
           numberOfLines={3}
         />
 
-        <Text style={styles.label}>Für Mia — freie Beschreibung</Text>
+        <Text style={styles.label}>Notizen</Text>
         <Text style={styles.fieldHint}>
-          Was soll Mia von Anfang an über {name || "dein Kind"} wissen?
+          Was du über {name || "dein Kind"} festhalten möchtest.
         </Text>
         <TextInput
           style={[styles.input, styles.inputMultiline, { height: 110 }]}

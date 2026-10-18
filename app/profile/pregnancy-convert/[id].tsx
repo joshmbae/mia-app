@@ -87,7 +87,7 @@ export default function PregnancyConvertScreen() {
           <Text style={styles.celebrationEmoji}>🎉</Text>
           <Text style={styles.celebrationTitle}>Herzlichen Glückwunsch!</Text>
           <Text style={styles.celebrationSub}>
-            Alle bisherigen Chats und Erinnerungen{"\n"}werden auf das Kindprofil übertragen.
+            Jetzt beginnt ein neues Kapitel —{"\n"}das Tagebuch wartet auf euch.
           </Text>
         </View>
 

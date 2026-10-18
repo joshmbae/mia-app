@@ -8,8 +8,6 @@ export default function RootLayout() {
       <Stack.Screen name="login" />
       <Stack.Screen name="onboarding" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="chat/[id]" />
-      <Stack.Screen name="memory/[id]" />
       <Stack.Screen name="hebamme" />
       <Stack.Screen name="profile/new" />
       <Stack.Screen name="profile/parent-new" />

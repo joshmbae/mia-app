@@ -6,49 +6,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Alert,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Swipeable from "react-native-gesture-handler/Swipeable";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { BabyProfile, ChatSession, Memory } from "../../types";
-import {
-  loadProfiles,
-  loadSessions,
-  createSession,
-  deleteSession,
-  loadMemories,
-  saveMemories,
-  loadMoments,
-} from "../../utils/storage";
-import { MomentEntry } from "../../types";
+import { BabyProfile, MomentEntry } from "../../types";
+import { loadProfiles, loadMoments } from "../../utils/storage";
 import { getCurrentPhase } from "../../utils/developmentPhases";
 import { momentEmoji } from "../../utils/moments";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<Memory["category"], string> = {
-  sleep: "Schlaf",
-  feeding: "Ernährung",
-  health: "Gesundheit",
-  development: "Entwicklung",
-  general: "Allgemein",
-  mood: "Stimmung",
-};
-
-const CATEGORY_COLORS: Record<Memory["category"], string> = {
-  sleep: "#7B9EC8",
-  feeding: "#4A7C6F",
-  health: "#D4856A",
-  development: "#9B7BB8",
-  general: "#C8A96E",
-  mood: "#D4856A",
-};
 
 const FEEDING_LABELS: Record<BabyProfile["feedingType"], string> = {
   breastfed: "Gestillt",
@@ -69,29 +36,12 @@ function berechneAlter(iso: string): string {
   return m > 0 ? `${y} J. ${m} Mo.` : `${y} Jahre alt`;
 }
 
-function formatDay(iso: string): string {
-  const date = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  if (iso === today.toISOString().slice(0, 10)) return "Heute";
-  if (iso === yesterday.toISOString().slice(0, 10)) return "Gestern";
-  return date.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [profile, setProfile] = useState<BabyProfile | null>(null);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [memories, setMemories] = useState<Memory[]>([]);
   const [moments, setMoments] = useState<MomentEntry[]>([]);
-  const [newMemoryText, setNewMemoryText] = useState("");
-  const [newMemoryCategory, setNewMemoryCategory] = useState<Memory["category"]>("general");
-  const [showAddMemory, setShowAddMemory] = useState(false);
-  const [showAllChats, setShowAllChats] = useState(false);
-  const [showAllMemories, setShowAllMemories] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
 
   useFocusEffect(
@@ -100,48 +50,11 @@ export default function ProfileScreen() {
         const profiles = await loadProfiles();
         const found = profiles.find((p) => p.id === id) ?? null;
         setProfile(found);
-        const sess = await loadSessions(id);
-        setSessions(sess);
-        const mems = await loadMemories(id);
-        setMemories(mems);
         setMoments(await loadMoments(id));
       }
       load();
     }, [id])
   );
-
-  async function deleteMemory(memId: string) {
-    const updated = memories.filter((m) => m.id !== memId);
-    setMemories(updated);
-    await saveMemories(id, updated);
-  }
-
-  async function addMemory() {
-    if (!newMemoryText.trim()) return;
-    const mem: Memory = {
-      id: Date.now().toString(),
-      babyId: id,
-      content: newMemoryText.trim(),
-      category: newMemoryCategory,
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [...memories, mem];
-    setMemories(updated);
-    await saveMemories(id, updated);
-    setNewMemoryText("");
-    setShowAddMemory(false);
-  }
-
-  async function startNewChat() {
-    const session = await createSession(id);
-    setSessions((prev) => [session, ...prev]);
-    router.push(`/chat/${session.id}?babyId=${id}`);
-  }
-
-  async function removeSession(sessionId: string) {
-    await deleteSession(id, sessionId);
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-  }
 
   if (!profile) return null;
 
@@ -160,340 +73,151 @@ export default function ProfileScreen() {
   if (profile.premature !== undefined) rows.push({ label: "Frühgeburt", value: profile.premature ? "Ja" : "Nein" });
   if (profile.siblings) rows.push({ label: "Geschwister", value: profile.siblings });
   if (profile.medicalNotes) rows.push({ label: "Med. Besonderheiten", value: profile.medicalNotes });
-
-  const visibleSessions = showAllChats ? sessions : sessions.slice(0, 3);
-  const visibleMemories = showAllMemories ? memories : memories.slice(0, 3);
+  if (profile.description) rows.push({ label: "Notizen", value: profile.description });
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          keyboardVerticalOffset={0}
-        >
+    <SafeAreaView style={styles.safe} edges={["top"]}>
 
-          {/* ── Hero Header ── */}
-          <View style={styles.hero}>
-            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={24} color="#4A7C6F" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.editBtn} onPress={() => router.push(`/profile/edit/${id}`)}>
-              <Ionicons name="create-outline" size={22} color="#4A7C6F" />
-            </TouchableOpacity>
+      {/* ── Hero Header ── */}
+      <View style={styles.hero}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color="#4A7C6F" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.editBtn} onPress={() => router.push(`/profile/edit/${id}`)}>
+          <Ionicons name="create-outline" size={22} color="#4A7C6F" />
+        </TouchableOpacity>
 
-            {profile.photoUri ? (
-              <Image source={{ uri: profile.photoUri }} style={styles.heroPhoto} />
-            ) : (
-              <View style={[styles.heroAvatar, { backgroundColor: profile.avatarColor }]}>
-                <Text style={styles.heroAvatarText}>{profile.name.charAt(0).toUpperCase()}</Text>
-              </View>
-            )}
-
-            <Text style={styles.heroName}>{profile.name}</Text>
-            <Text style={styles.heroAge}>{berechneAlter(profile.birthDate)}</Text>
+        {profile.photoUri ? (
+          <Image source={{ uri: profile.photoUri }} style={styles.heroPhoto} />
+        ) : (
+          <View style={[styles.heroAvatar, { backgroundColor: profile.avatarColor }]}>
+            <Text style={styles.heroAvatarText}>{profile.name.charAt(0).toUpperCase()}</Text>
           </View>
+        )}
 
-          {/* ── Scrollable Body ── */}
-          <ScrollView
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+        <Text style={styles.heroName}>{profile.name}</Text>
+        <Text style={styles.heroAge}>{berechneAlter(profile.birthDate)}</Text>
+      </View>
 
-            {/* ── 1. Tagebuch ── */}
-            {(() => {
-              const currentPhase = getCurrentPhase(profile.birthDate);
-              const recent = moments.slice(-5).reverse();
-              return (
-                <>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>📖 Tagebuch</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.devCard}
-                    onPress={() => router.push(`/profile/development/${id}`)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={styles.devCardTop}>
-                      {currentPhase && (
-                        <View style={[styles.devCardPhaseBadge, { backgroundColor: "#EAF2EF" }]}>
-                          <Text style={[styles.devCardPhaseText, { color: "#4A7C6F" }]}>
-                            {currentPhase.emoji} {currentPhase.title}
-                          </Text>
-                        </View>
-                      )}
-                      <Ionicons name="chevron-forward" size={16} color="#4A7C6F" style={{ marginLeft: "auto" }} />
-                    </View>
-                    <Text style={styles.devCardTitle}>
-                      {moments.length > 0 ? `${moments.length} ${moments.length === 1 ? "Moment" : "Momente"} festgehalten` : "Eure Geschichte beginnt hier"}
-                    </Text>
-                    <Text style={styles.devCardSummary} numberOfLines={2}>
-                      {moments.length > 0
-                        ? "Zeitstrahl, Fotos und Notizen — und am Ende vielleicht ein Buch."
-                        : "Halte besondere Momente mit Foto und ein paar Zeilen fest."}
-                    </Text>
-                    <View style={styles.devCardFooter}>
-                      {recent.length > 0 ? (
-                        recent.map((m) => (
-                          <View key={m.id} style={styles.devCardSticker}>
-                            <Text style={{ fontSize: 16 }}>{momentEmoji(m)}</Text>
-                          </View>
-                        ))
-                      ) : (
-                        <View style={styles.devCardProgressPill}>
-                          <Text style={styles.devCardProgressText}>＋ Moment festhalten</Text>
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                </>
-              );
-            })()}
+      {/* ── Scrollable Body ── */}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
 
-            {/* ── 2. Chats ── */}
-            <View style={[styles.sectionHeader, { marginTop: 8 }]}>
-              <Text style={styles.sectionTitle}>💬 Gespräche</Text>
-              <TouchableOpacity style={styles.newChatPill} onPress={startNewChat}>
-                <Ionicons name="add" size={15} color="#4A7C6F" />
-                <Text style={styles.newChatPillText}>Neu</Text>
-              </TouchableOpacity>
-            </View>
-
-            {sessions.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>Noch keine Gespräche — starte das erste!</Text>
+        {/* ── 1. Tagebuch ── */}
+        {(() => {
+          const currentPhase = getCurrentPhase(profile.birthDate);
+          const recent = moments.slice(-5).reverse();
+          return (
+            <>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>📖 Tagebuch</Text>
               </View>
-            ) : (
-              <>
-                {visibleSessions.map((item) => (
-                  <Swipeable
-                    key={item.id}
-                    renderRightActions={() => (
-                      <TouchableOpacity
-                        style={styles.deleteAction}
-                        onPress={() =>
-                          Alert.alert("Gespräch löschen?", "Alle Nachrichten dieses Gesprächs werden entfernt.", [
-                            { text: "Abbrechen", style: "cancel" },
-                            { text: "Löschen", style: "destructive", onPress: () => removeSession(item.id) },
-                          ])
-                        }
-                      >
-                        <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    )}
-                  >
-                    <TouchableOpacity
-                      style={styles.chatCard}
-                      onPress={() => router.push(`/chat/${item.id}?babyId=${id}`)}
-                    >
-                      <View style={styles.chatCardIcon}>
-                        <Ionicons name="chatbubbles-outline" size={20} color="#4A7C6F" />
-                      </View>
-                      <View style={styles.chatCardInfo}>
-                        <Text style={styles.chatCardDate}>{formatDay(item.updatedAt.slice(0, 10))}</Text>
-                        <Text style={styles.chatCardPreview} numberOfLines={1}>{item.preview}</Text>
-                      </View>
-                      <Ionicons name="chevron-forward" size={16} color="#B0A89A" />
-                    </TouchableOpacity>
-                  </Swipeable>
-                ))}
-                {sessions.length > 3 && (
-                  <TouchableOpacity
-                    style={styles.showMoreBtn}
-                    onPress={() => setShowAllChats((v) => !v)}
-                  >
-                    <Text style={styles.showMoreText}>
-                      {showAllChats ? "Weniger anzeigen" : `Alle ${sessions.length} Gespräche anzeigen`}
-                    </Text>
-                    <Ionicons name={showAllChats ? "chevron-up" : "chevron-down"} size={14} color="#4A7C6F" />
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
-
-            {/* ── 3. Tracker ── */}
-            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <Text style={styles.sectionTitle}>📊 Tracker</Text>
-            </View>
-
-            <TouchableOpacity
-              style={[styles.toolBtn, { borderColor: "#C5DDD8" }]}
-              onPress={() => router.push(`/profile/weight/${profile.id}`)}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.toolBtnIcon, { backgroundColor: "#EAF2EF" }]}>
-                <Text style={{ fontSize: 18 }}>📈</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.toolBtnTitle}>Gewichtsverlauf</Text>
-                <Text style={styles.toolBtnSub}>
-                  {profile.weightGrams ? `Geburtsgewicht: ${profile.weightGrams} g` : "Wachstum & WHO-Kurven"}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#4A7C6F" />
-            </TouchableOpacity>
-
-            {/* ── 4. Still & Schlaf Tracker ── */}
-            <TouchableOpacity
-              style={[styles.toolBtn, { borderColor: "#DEC8F0" }]}
-              onPress={() => router.push(`/profile/tracker/${profile.id}`)}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.toolBtnIcon, { backgroundColor: "#EEE0F8" }]}>
-                <Text style={{ fontSize: 18 }}>🤱</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.toolBtnTitle}>Still & Schlaf Tracker</Text>
-                <Text style={styles.toolBtnSub}>Zeiten aufzeichnen & auswerten</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#9B7BB8" />
-            </TouchableOpacity>
-
-            {/* ── 5. Für Mia ── */}
-            {profile.description ? (
-              <View style={[styles.descriptionCard, { marginTop: 24 }]}>
-                <Text style={styles.descriptionTitle}>💜 Für Mia</Text>
-                <Text style={styles.descriptionText}>{profile.description}</Text>
-              </View>
-            ) : null}
-
-            {/* ── 6. Erinnerungen ── */}
-            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-              <Text style={styles.sectionTitle}>🧠 Erinnerungen</Text>
               <TouchableOpacity
-                style={styles.newChatPill}
-                onPress={() => setShowAddMemory((v) => !v)}
+                style={styles.devCard}
+                onPress={() => router.push(`/profile/development/${id}`)}
+                activeOpacity={0.85}
               >
-                <Ionicons name={showAddMemory ? "close" : "add"} size={15} color="#4A7C6F" />
-                <Text style={styles.newChatPillText}>{showAddMemory ? "Abbrechen" : "Neu"}</Text>
-              </TouchableOpacity>
-            </View>
-
-            {showAddMemory && (
-              <View style={styles.addMemoryForm}>
-                <TextInput
-                  style={styles.addMemoryInput}
-                  placeholder="z. B. Schläft am besten bei Weißem Rauschen"
-                  placeholderTextColor="#B0A89A"
-                  value={newMemoryText}
-                  onChangeText={setNewMemoryText}
-                  multiline
-                  autoFocus
-                />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                  <View style={{ flexDirection: "row", gap: 8 }}>
-                    {(Object.keys(CATEGORY_LABELS) as Memory["category"][]).map((cat) => (
-                      <TouchableOpacity
-                        key={cat}
-                        style={[
-                          styles.catChip,
-                          { borderColor: CATEGORY_COLORS[cat] },
-                          newMemoryCategory === cat && { backgroundColor: CATEGORY_COLORS[cat] },
-                        ]}
-                        onPress={() => setNewMemoryCategory(cat)}
-                      >
-                        <Text style={[styles.catChipText, newMemoryCategory === cat && { color: "#FFFFFF" }]}>
-                          {CATEGORY_LABELS[cat]}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-                <TouchableOpacity
-                  style={[styles.saveMemBtn, !newMemoryText.trim() && { opacity: 0.4 }]}
-                  onPress={addMemory}
-                  disabled={!newMemoryText.trim()}
-                >
-                  <Text style={styles.saveMemBtnText}>Speichern</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {memories.length === 0 && !showAddMemory ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>Mia speichert Erinnerungen beim Chatten — oder füge selbst eine hinzu.</Text>
-              </View>
-            ) : (
-              <>
-                {visibleMemories.map((item) => (
-                  <Swipeable
-                    key={item.id}
-                    renderRightActions={() => (
-                      <TouchableOpacity
-                        style={[styles.deleteAction, { marginBottom: 10 }]}
-                        onPress={() =>
-                          Alert.alert("Löschen?", "Diese Erinnerung wird dauerhaft entfernt.", [
-                            { text: "Abbrechen", style: "cancel" },
-                            { text: "Löschen", style: "destructive", onPress: () => deleteMemory(item.id) },
-                          ])
-                        }
-                      >
-                        <Ionicons name="trash-outline" size={20} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    )}
-                  >
-                    <View style={styles.memoryCard}>
-                      <View style={[styles.categoryBadge, { backgroundColor: CATEGORY_COLORS[item.category] }]}>
-                        <Text style={styles.categoryText}>{CATEGORY_LABELS[item.category]}</Text>
-                      </View>
-                      <Text style={styles.memoryContent}>{item.content}</Text>
-                      <Text style={styles.memoryDate}>
-                        {new Date(item.createdAt).toLocaleDateString("de-DE", {
-                          day: "2-digit", month: "2-digit", year: "numeric",
-                        })}
+                <View style={styles.devCardTop}>
+                  {currentPhase && (
+                    <View style={[styles.devCardPhaseBadge, { backgroundColor: "#EAF2EF" }]}>
+                      <Text style={[styles.devCardPhaseText, { color: "#4A7C6F" }]}>
+                        {currentPhase.emoji} {currentPhase.title}
                       </Text>
                     </View>
-                  </Swipeable>
-                ))}
-                {memories.length > 3 && (
-                  <TouchableOpacity
-                    style={styles.showMoreBtn}
-                    onPress={() => setShowAllMemories((v) => !v)}
-                  >
-                    <Text style={styles.showMoreText}>
-                      {showAllMemories ? "Weniger anzeigen" : `Alle ${memories.length} Erinnerungen anzeigen`}
-                    </Text>
-                    <Ionicons name={showAllMemories ? "chevron-up" : "chevron-down"} size={14} color="#4A7C6F" />
-                  </TouchableOpacity>
-                )}
-              </>
-            )}
+                  )}
+                  <Ionicons name="chevron-forward" size={16} color="#4A7C6F" style={{ marginLeft: "auto" }} />
+                </View>
+                <Text style={styles.devCardTitle}>
+                  {moments.length > 0 ? `${moments.length} ${moments.length === 1 ? "Moment" : "Momente"} festgehalten` : "Eure Geschichte beginnt hier"}
+                </Text>
+                <Text style={styles.devCardSummary} numberOfLines={2}>
+                  {moments.length > 0
+                    ? "Zeitstrahl, Fotos und Notizen — und am Ende vielleicht ein Buch."
+                    : "Halte besondere Momente mit Foto und ein paar Zeilen fest."}
+                </Text>
+                <View style={styles.devCardFooter}>
+                  {recent.length > 0 ? (
+                    recent.map((m) => (
+                      <View key={m.id} style={styles.devCardSticker}>
+                        <Text style={{ fontSize: 16 }}>{momentEmoji(m)}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <View style={styles.devCardProgressPill}>
+                      <Text style={styles.devCardProgressText}>＋ Moment festhalten</Text>
+                    </View>
+                  )}
+                </View>
+              </TouchableOpacity>
+            </>
+          );
+        })()}
 
-            {/* ── 7. Profil-Infos (klappbar) ── */}
-            <TouchableOpacity
-              style={[styles.sectionHeader, { marginTop: 24 }]}
-              onPress={() => setShowInfo((v) => !v)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sectionTitle}>📋 Profilinfos</Text>
-              <Ionicons name={showInfo ? "chevron-up" : "chevron-down"} size={16} color="#B0A89A" />
-            </TouchableOpacity>
+        {/* ── 2. Tracker ── */}
+        <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+          <Text style={styles.sectionTitle}>📊 Tracker</Text>
+        </View>
 
-            {showInfo && (
-              <View style={styles.infoCard}>
-                {rows.map((row, i) => (
-                  <View key={row.label} style={[styles.infoRow, i < rows.length - 1 && styles.infoRowBorder]}>
-                    <Text style={styles.infoLabel}>{row.label}</Text>
-                    <Text style={styles.infoValue}>{row.value}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-          </ScrollView>
-
-          {/* ── Floating Chat Button ── */}
-          <View style={styles.chatBtnWrapper}>
-            <TouchableOpacity style={styles.chatBtnLarge} onPress={startNewChat}>
-              <Ionicons name="chatbubble-ellipses" size={20} color="#FFFFFF" />
-              <Text style={styles.chatBtnLargeText}>Mia zu {profile.name} fragen</Text>
-            </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toolBtn, { borderColor: "#C5DDD8" }]}
+          onPress={() => router.push(`/profile/weight/${profile.id}`)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.toolBtnIcon, { backgroundColor: "#EAF2EF" }]}>
+            <Text style={{ fontSize: 18 }}>📈</Text>
           </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toolBtnTitle}>Gewichtsverlauf</Text>
+            <Text style={styles.toolBtnSub}>
+              {profile.weightGrams ? `Geburtsgewicht: ${profile.weightGrams} g` : "Wachstum & WHO-Kurven"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#4A7C6F" />
+        </TouchableOpacity>
 
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </GestureHandlerRootView>
+        {/* ── 3. Still & Schlaf Tracker ── */}
+        <TouchableOpacity
+          style={[styles.toolBtn, { borderColor: "#DEC8F0" }]}
+          onPress={() => router.push(`/profile/tracker/${profile.id}`)}
+          activeOpacity={0.85}
+        >
+          <View style={[styles.toolBtnIcon, { backgroundColor: "#EEE0F8" }]}>
+            <Text style={{ fontSize: 18 }}>🤱</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toolBtnTitle}>Still & Schlaf Tracker</Text>
+            <Text style={styles.toolBtnSub}>Zeiten aufzeichnen & auswerten</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#9B7BB8" />
+        </TouchableOpacity>
+
+        {/* ── 4. Profil-Infos (klappbar) ── */}
+        <TouchableOpacity
+          style={[styles.sectionHeader, { marginTop: 24 }]}
+          onPress={() => setShowInfo((v) => !v)}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.sectionTitle}>📋 Profilinfos</Text>
+          <Ionicons name={showInfo ? "chevron-up" : "chevron-down"} size={16} color="#B0A89A" />
+        </TouchableOpacity>
+
+        {showInfo && (
+          <View style={styles.infoCard}>
+            {rows.map((row, i) => (
+              <View key={row.label} style={[styles.infoRow, i < rows.length - 1 && styles.infoRowBorder]}>
+                <Text style={styles.infoLabel}>{row.label}</Text>
+                <Text style={styles.infoValue}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+      </ScrollView>
+
+    </SafeAreaView>
   );
 }
 
@@ -529,7 +253,7 @@ const styles = StyleSheet.create({
   heroAge: { fontSize: 14, color: "#7A7269", marginTop: 4 },
 
   // Scrollable content
-  content: { padding: 20, paddingBottom: 110 },
+  content: { padding: 20, paddingBottom: 48 },
 
   // Info Card
   infoCard: {
@@ -595,21 +319,6 @@ const styles = StyleSheet.create({
   },
   phaseBadgeChipText: { fontSize: 11, fontWeight: "800", color: "#FFFFFF" },
 
-  // Description
-  descriptionCard: {
-    backgroundColor: "#EAF2EF",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#C5DDD8",
-  },
-  descriptionTitle: {
-    fontSize: 12, fontWeight: "700", color: "#4A7C6F",
-    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8,
-  },
-  descriptionText: { fontSize: 14, color: "#2D2A26", lineHeight: 21 },
-
   // Tool buttons (Gewicht, Tracker)
   toolBtn: {
     flexDirection: "row", alignItems: "center",
@@ -632,86 +341,4 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", marginBottom: 12,
   },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: "#2D2A26", letterSpacing: -0.2 },
-  newChatPill: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: "#EAF2EF", borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 6,
-  },
-  newChatPillText: { fontSize: 13, fontWeight: "600", color: "#4A7C6F" },
-
-  // Chat cards
-  chatCard: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "#F0EBE3", borderRadius: 14,
-    padding: 14, gap: 12, marginBottom: 8,
-  },
-  chatCardIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: "#EAF2EF", alignItems: "center", justifyContent: "center",
-  },
-  chatCardInfo: { flex: 1 },
-  chatCardDate: { fontSize: 14, fontWeight: "700", color: "#2D2A26" },
-  chatCardPreview: { fontSize: 13, color: "#7A7269", marginTop: 2 },
-
-  // Show more
-  showMoreBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 6, paddingVertical: 10, marginBottom: 4,
-  },
-  showMoreText: { fontSize: 14, color: "#4A7C6F", fontWeight: "600" },
-
-  // Memory cards
-  memoryCard: {
-    backgroundColor: "#F0EBE3", borderRadius: 14,
-    padding: 14, marginBottom: 10, gap: 6,
-  },
-  categoryBadge: { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 3 },
-  categoryText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
-  memoryContent: { fontSize: 14, color: "#2D2A26", lineHeight: 20 },
-  memoryDate: { fontSize: 12, color: "#B0A89A" },
-
-  // Add memory form
-  addMemoryForm: {
-    backgroundColor: "#F0EBE3", borderRadius: 14,
-    padding: 14, marginBottom: 12,
-  },
-  addMemoryInput: {
-    backgroundColor: "#FFFFFF", borderRadius: 10,
-    padding: 12, fontSize: 15, color: "#2D2A26",
-    minHeight: 72, textAlignVertical: "top", marginBottom: 12,
-  },
-  catChip: { borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  catChipText: { fontSize: 13, fontWeight: "600", color: "#7A7269" },
-  saveMemBtn: {
-    paddingVertical: 12, borderRadius: 10,
-    backgroundColor: "#4A7C6F", alignItems: "center",
-  },
-  saveMemBtnText: { color: "#FFFFFF", fontWeight: "700" },
-
-  // Delete action
-  deleteAction: {
-    backgroundColor: "#C0392B", width: 70, borderRadius: 14,
-    marginLeft: 8, marginBottom: 8,
-    alignItems: "center", justifyContent: "center",
-  },
-
-  // Empty state
-  emptyCard: {
-    backgroundColor: "#F0EBE3", borderRadius: 14,
-    padding: 16, marginBottom: 8, alignItems: "center",
-  },
-  emptyText: { fontSize: 14, color: "#7A7269", textAlign: "center", lineHeight: 20 },
-
-  // Floating chat button
-  chatBtnWrapper: {
-    position: "absolute", bottom: 24, left: 20, right: 20,
-  },
-  chatBtnLarge: {
-    backgroundColor: "#4A7C6F", borderRadius: 16, paddingVertical: 17,
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 10,
-    shadowColor: "#4A7C6F", shadowOpacity: 0.3, shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 }, elevation: 6,
-  },
-  chatBtnLargeText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
 });

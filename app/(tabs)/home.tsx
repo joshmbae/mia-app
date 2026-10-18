@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BabyProfile, PregnancyProfile, FeedingLog, SleepLog, MomentEntry } from "../../types";
-import { loadProfiles, loadPregnancyProfiles, createSession, loadMoments, loadFeedingLogs, loadSleepLogs } from "../../utils/storage";
+import { loadProfiles, loadPregnancyProfiles, loadMoments, loadFeedingLogs, loadSleepLogs } from "../../utils/storage";
 import { getCurrentPhase } from "../../utils/developmentPhases";
 import { momentEmoji, momentTitle } from "../../utils/moments";
 import { getPregnancyBlock } from "../../utils/pregnancyDevelopmentContent";
@@ -38,36 +38,22 @@ function berechneAlter(birthDateISO: string): string {
 
 function getGreeting(): { line1: string; line2: string } {
   const h = new Date().getHours();
-  if (h < 6)  return { line1: "Noch wach?", line2: "Ich bin für dich da 🌙" };
+  if (h < 6)  return { line1: "Noch wach?", line2: "Pass gut auf dich auf 🌙" };
   if (h < 12) return { line1: "Guten Morgen!", line2: "Schön, dass du da bist ☀️" };
   if (h < 17) return { line1: "Hallo!", line2: "Wie läuft der Tag so? 🌿" };
   if (h < 21) return { line1: "Guten Abend!", line2: "Ich hoffe, es war ein schöner Tag 🍂" };
-  return { line1: "Gute Nacht bald!", line2: "Noch eine letzte Frage? 🌙" };
-}
-
-function getMiaPrompt(profiles: BabyProfile[], pregnancies: PregnancyProfile[]): string {
-  const h = new Date().getHours();
-  if (profiles.length === 1) {
-    const name = profiles[0].name;
-    if (h < 12) return `Wie war die Nacht mit ${name}?`;
-    if (h < 17) return `Wie geht es ${name} heute?`;
-    return `Wie war der Tag mit ${name}?`;
-  }
-  if (profiles.length > 1) return "Was beschäftigt dich gerade?";
-  if (pregnancies.length > 0) return "Wie geht es dir heute?";
-  return "Stell mir deine erste Frage";
+  return { line1: "Gute Nacht bald!", line2: "Ruh dich gut aus 🌙" };
 }
 
 // ─── Baby Card ────────────────────────────────────────────────────────────────
 
 function BabyCard({
-  profile, moments, activity, showPhaseTip, onChat,
+  profile, moments, activity, showPhaseTip,
 }: {
   profile: BabyProfile;
   moments: MomentEntry[];
   activity?: { lastFeeding?: FeedingLog; lastSleep?: SleepLog };
   showPhaseTip: boolean;
-  onChat: () => void;
 }) {
   const phase = getCurrentPhase(profile.birthDate);
   const latest = moments[moments.length - 1];
@@ -78,7 +64,7 @@ function BabyCard({
       onPress={() => router.push(`/profile/${profile.id}`)}
       activeOpacity={0.88}
     >
-      {/* Top row: Avatar + Name + Age + Chat button */}
+      {/* Top row: Avatar + Name + Age */}
       <View style={styles.richCardTop}>
         <View>
           {profile.photoUri ? (
@@ -93,14 +79,6 @@ function BabyCard({
           <Text style={styles.richCardName}>{profile.name}</Text>
           <Text style={styles.richCardSub}>{berechneAlter(profile.birthDate)}</Text>
         </View>
-        <TouchableOpacity
-          style={[styles.chatPill, { backgroundColor: profile.avatarColor }]}
-          onPress={onChat}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chatbubble-ellipses" size={13} color="#FFFFFF" />
-          <Text style={styles.chatPillText}>Mia fragen</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Zuletzt gestillt/geschlafen */}
@@ -158,7 +136,7 @@ function BabyCard({
 
 // ─── Pregnancy Card ───────────────────────────────────────────────────────────
 
-function PregnancyCard({ preg, onChat }: { preg: PregnancyProfile; onChat: () => void }) {
+function PregnancyCard({ preg }: { preg: PregnancyProfile }) {
   const ssw = calcSSW(preg.dueDate);
   const block = getPregnancyBlock(ssw);
 
@@ -179,14 +157,6 @@ function PregnancyCard({ preg, onChat }: { preg: PregnancyProfile; onChat: () =>
             SSW {ssw} · ET {new Date(preg.dueDate).toLocaleDateString("de-DE", { day: "2-digit", month: "long" })}
           </Text>
         </View>
-        <TouchableOpacity
-          style={[styles.chatPill, { backgroundColor: preg.avatarColor }]}
-          onPress={onChat}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="chatbubble-ellipses" size={13} color="#FFFFFF" />
-          <Text style={styles.chatPillText}>Mia fragen</Text>
-        </TouchableOpacity>
       </View>
 
       {/* Phase strip */}
@@ -249,16 +219,6 @@ export default function HomeScreen() {
     }, [])
   );
 
-  async function startChildChat(profileId: string) {
-    const session = await createSession(profileId);
-    router.push(`/chat/${session.id}?babyId=${profileId}`);
-  }
-
-  async function startPregnancyChat(pregId: string) {
-    const session = await createSession(pregId);
-    router.push(`/chat/${session.id}?babyId=${pregId}`);
-  }
-
   const greeting = getGreeting();
   const hasAnything = profiles.length > 0 || pregnancies.length > 0;
 
@@ -278,24 +238,6 @@ export default function HomeScreen() {
             <Ionicons name="people-outline" size={22} color="#7A7269" />
           </TouchableOpacity>
         </View>
-
-        {/* ── Frag Mia ── */}
-        <TouchableOpacity
-          style={styles.featuredCard}
-          onPress={() => router.push("/chat/general")}
-          activeOpacity={0.88}
-        >
-          <View style={styles.featuredIcon}>
-            <Text style={{ fontSize: 24 }}>💬</Text>
-          </View>
-          <View style={styles.featuredTexts}>
-            <Text style={styles.featuredTitle}>Frag Mia</Text>
-            <Text style={styles.featuredSub}>{getMiaPrompt(profiles, pregnancies)}</Text>
-          </View>
-          <View style={styles.featuredArrow}>
-            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
-          </View>
-        </TouchableOpacity>
 
         {/* ── Leerer Zustand ── */}
         {!hasAnything && (
@@ -328,7 +270,6 @@ export default function HomeScreen() {
               <PregnancyCard
                 key={preg.id}
                 preg={preg}
-                onChat={() => startPregnancyChat(preg.id)}
               />
             ))}
             <TouchableOpacity style={styles.addLink} onPress={() => router.push("/profile/pregnancy-new")}>
@@ -349,7 +290,6 @@ export default function HomeScreen() {
                 moments={momentMap[profile.id] ?? []}
                 activity={activityMap[profile.id]}
                 showPhaseTip={profiles.length === 1}
-                onChat={() => startChildChat(profile.id)}
               />
             ))}
             <TouchableOpacity style={styles.addLink} onPress={() => router.push("/profile/new")}>
@@ -381,7 +321,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row", alignItems: "center", gap: 12,
     backgroundColor: "#F5F0E8", borderRadius: 20,
-    padding: 16, marginBottom: 16, ...SHADOW,
+    padding: 16, marginBottom: 24, ...SHADOW,
   },
   headerTexts: { flex: 1 },
   headerLine1: { fontSize: 18, fontWeight: "800", color: "#2D2A26", marginBottom: 2 },
@@ -391,25 +331,6 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center",
     borderWidth: 1, borderColor: "#E5DDD5",
-  },
-
-  featuredCard: {
-    flexDirection: "row", alignItems: "center",
-    backgroundColor: "#4A7C6F", borderRadius: 20,
-    padding: 18, marginBottom: 24, gap: 14, ...SHADOW,
-  },
-  featuredIcon: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    alignItems: "center", justifyContent: "center",
-  },
-  featuredTexts: { flex: 1 },
-  featuredTitle: { fontSize: 17, fontWeight: "800", color: "#FFFFFF", marginBottom: 3 },
-  featuredSub: { fontSize: 13, color: "rgba(255,255,255,0.8)", lineHeight: 18 },
-  featuredArrow: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center", justifyContent: "center",
   },
 
   // Onboarding
@@ -447,12 +368,6 @@ const styles = StyleSheet.create({
   richCardMeta: { flex: 1 },
   richCardName: { fontSize: 16, fontWeight: "800", color: "#2D2A26" },
   richCardSub: { fontSize: 13, color: "#7A7269", marginTop: 2 },
-
-  chatPill: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 11, paddingVertical: 7, borderRadius: 20,
-  },
-  chatPillText: { color: "#FFFFFF", fontSize: 12, fontWeight: "700" },
 
   // Phase strip
   phaseStrip: {

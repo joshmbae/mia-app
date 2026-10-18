@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { File } from "expo-file-system";
 import { supabase } from "./supabase";
-import { BabyProfile, ParentProfile, PregnancyProfile, ChatMessage, ChatSession, Memory, WeightLog, FeedingLog, SleepLog, MomentEntry } from "../types";
+import { BabyProfile, ParentProfile, PregnancyProfile, WeightLog, FeedingLog, SleepLog, MomentEntry } from "../types";
 
 // ─── Generic reconcile helper ─────────────────────────────────────────────────
 // Row-Level-Security already scopes every query to the logged-in user, so these
@@ -169,18 +169,7 @@ export async function migratePregnancyToBaby(
   const babies = await loadProfiles();
   await saveProfiles([...babies, newBaby]);
 
-  // Migrate sessions: move to new baby ID, update babyId field (in place, same session id)
-  const sessions = await loadSessions(pregnancyId);
-  const updatedSessions = sessions.map((s) => ({ ...s, babyId: newBaby.id }));
-  await saveSessions(newBaby.id, updatedSessions);
-
-  // Migrate memories: composite key includes baby_id, so old rows must be deleted explicitly
-  const memories = await loadMemories(pregnancyId);
-  const updatedMemories = memories.map((m) => ({ ...m, babyId: newBaby.id }));
-  await saveMemories(newBaby.id, updatedMemories);
-  await supabase.from("memories").delete().eq("baby_id", pregnancyId);
-
-  // Remove pregnancy profile (sessions/memories already moved, don't delete them)
+  // Remove pregnancy profile
   const pregnancies = await loadPregnancyProfiles();
   await savePregnancyProfiles(pregnancies.filter((p) => p.id !== pregnancyId));
 
@@ -190,132 +179,13 @@ export async function migratePregnancyToBaby(
 export async function deletePregnancyProfile(id: string): Promise<void> {
   const profiles = await loadPregnancyProfiles();
   await savePregnancyProfiles(profiles.filter((p) => p.id !== id));
-  const sessions = await loadSessions(id);
-  if (sessions.length > 0) {
-    await supabase.from("chat_messages").delete().in("session_id", sessions.map((s) => s.id));
-  }
-  await supabase.from("chat_sessions").delete().eq("baby_id", id);
-  await supabase.from("memories").delete().eq("baby_id", id);
-}
-
-// ─── Chat Sessions ────────────────────────────────────────────────────────────
-
-function chatSessionToRow(babyId: string, s: ChatSession) {
-  return {
-    id: s.id,
-    baby_id: babyId,
-    created_at: s.createdAt,
-    updated_at: s.updatedAt,
-    preview: s.preview,
-  };
-}
-
-function rowToChatSession(r: any): ChatSession {
-  return {
-    id: r.id,
-    babyId: r.baby_id,
-    createdAt: r.created_at,
-    updatedAt: r.updated_at,
-    preview: r.preview,
-  };
-}
-
-export async function loadSessions(babyId: string): Promise<ChatSession[]> {
-  const { data, error } = await supabase.from("chat_sessions").select("*").eq("baby_id", babyId);
-  if (error) throw error;
-  return (data ?? []).map(rowToChatSession);
-}
-
-export async function saveSessions(babyId: string, sessions: ChatSession[]): Promise<void> {
-  await reconcile(
-    "chat_sessions",
-    ["baby_id", babyId],
-    "id",
-    sessions.map((s) => s.id),
-    sessions.map((s) => chatSessionToRow(babyId, s))
-  );
-}
-
-export async function createSession(babyId: string): Promise<ChatSession> {
-  const session: ChatSession = {
-    id: Date.now().toString(),
-    babyId,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    preview: "Neues Gespräch",
-  };
-  const existing = await loadSessions(babyId);
-  await saveSessions(babyId, [session, ...existing]);
-  return session;
-}
-
-export async function updateSessionPreview(
-  babyId: string,
-  sessionId: string,
-  preview: string
-): Promise<void> {
-  const sessions = await loadSessions(babyId);
-  const updated = sessions.map((s) =>
-    s.id === sessionId ? { ...s, preview, updatedAt: new Date().toISOString() } : s
-  );
-  await saveSessions(babyId, updated);
-}
-
-export async function deleteSession(babyId: string, sessionId: string): Promise<void> {
-  const sessions = await loadSessions(babyId);
-  await saveSessions(babyId, sessions.filter((s) => s.id !== sessionId));
-  await supabase.from("chat_messages").delete().eq("session_id", sessionId);
-}
-
-// ─── Messages ─────────────────────────────────────────────────────────────────
-
-function chatMessageToRow(sessionId: string, m: ChatMessage) {
-  return {
-    session_id: sessionId,
-    id: m.id,
-    role: m.role,
-    content: m.content,
-    timestamp: m.timestamp,
-  };
-}
-
-function rowToChatMessage(r: any): ChatMessage {
-  return {
-    id: r.id,
-    role: r.role,
-    content: r.content,
-    timestamp: r.timestamp,
-  };
-}
-
-export async function saveMessages(sessionId: string, messages: ChatMessage[]): Promise<void> {
-  await reconcile(
-    "chat_messages",
-    ["session_id", sessionId],
-    "id",
-    messages.map((m) => m.id),
-    messages.map((m) => chatMessageToRow(sessionId, m))
-  );
-}
-
-export async function loadMessages(sessionId: string): Promise<ChatMessage[]> {
-  const { data, error } = await supabase.from("chat_messages").select("*").eq("session_id", sessionId);
-  if (error) throw error;
-  return (data ?? []).map(rowToChatMessage);
 }
 
 export async function deleteProfile(id: string): Promise<void> {
   // Remove profile
   const profiles = await loadProfiles();
   await saveProfiles(profiles.filter((p) => p.id !== id));
-  // Remove all sessions + their messages
-  const sessions = await loadSessions(id);
-  if (sessions.length > 0) {
-    await supabase.from("chat_messages").delete().in("session_id", sessions.map((s) => s.id));
-  }
-  await supabase.from("chat_sessions").delete().eq("baby_id", id);
-  // Remove memories, weight/feeding/sleep logs, milestones
-  await supabase.from("memories").delete().eq("baby_id", id);
+  // Remove weight/feeding/sleep logs and diary
   await supabase.from("weight_logs").delete().eq("baby_id", id);
   await supabase.from("feeding_logs").delete().eq("baby_id", id);
   await supabase.from("sleep_logs").delete().eq("baby_id", id);
@@ -330,45 +200,6 @@ export async function deleteProfile(id: string): Promise<void> {
 export async function deleteParentProfile(id: string): Promise<void> {
   const profiles = await loadParentProfiles();
   await saveParentProfiles(profiles.filter((p) => p.id !== id));
-  await supabase.from("memories").delete().eq("baby_id", id);
-}
-
-// ─── Memories ─────────────────────────────────────────────────────────────────
-
-function memoryToRow(babyId: string, m: Memory) {
-  return {
-    baby_id: babyId,
-    id: m.id,
-    content: m.content,
-    category: m.category,
-    created_at: m.createdAt,
-  };
-}
-
-function rowToMemory(r: any): Memory {
-  return {
-    id: r.id,
-    babyId: r.baby_id,
-    content: r.content,
-    category: r.category,
-    createdAt: r.created_at,
-  };
-}
-
-export async function saveMemories(babyId: string, memories: Memory[]): Promise<void> {
-  await reconcile(
-    "memories",
-    ["baby_id", babyId],
-    "id",
-    memories.map((m) => m.id),
-    memories.map((m) => memoryToRow(babyId, m))
-  );
-}
-
-export async function loadMemories(babyId: string): Promise<Memory[]> {
-  const { data, error } = await supabase.from("memories").select("*").eq("baby_id", babyId);
-  if (error) throw error;
-  return (data ?? []).map(rowToMemory);
 }
 
 // ─── Weight Logs ──────────────────────────────────────────────────────────────

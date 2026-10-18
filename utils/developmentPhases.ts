@@ -28,9 +28,6 @@ export interface DevelopmentPhase {
   parentTip: string;        // 1 konkreter Tipp — was Eltern jetzt tun können
   forParents: string;       // Ehrlicher Mental-Health / Erschöpfungs-Hinweis
   developmentHint?: string; // Intensive Entwicklungsphase — wann vorhanden
-
-  // Für Mia's System Prompt
-  miaContext: string;       // Kompakter Kontextsatz für KI
 }
 
 export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
@@ -56,8 +53,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Haut-zu-Haut-Kontakt (Känguru-Pflege) beruhigt das Baby und reguliert seinen Herzschlag und seine Temperatur. Deine Stimme ist die vertrauteste Sache der Welt für dein Kind — einfach reden reicht.",
     forParents:
       "Die ersten zwei Wochen sind für viele Eltern die härteste Zeit überhaupt — Schlafentzug, Unsicherheit, Hormone. Das ist nicht Versagen, das ist Normalität. Baby-Blues (Stimmungstiefs in den ersten Wochen) ist sehr häufig. Hält er länger als zwei Wochen an oder wird stärker, sprich mit deiner Hebamme — postpartale Depression ist gut behandelbar. Telefonseelsorge: 0800 111 0 111 (kostenlos, 24h).",
-    miaContext:
-      "Baby ist 0–2 Wochen alt. Neugeborenenreflexe aktiv, schläft 16–20 Std., trinkt alle 2–3h. Baby-Blues der Mutter möglich. Wichtigste Themen: Trinken, Schlafen, Wochenbett, Bindung.",
   },
 
   {
@@ -81,8 +76,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Der Weinpeak bei Woche 6 überrascht viele Eltern, die dachten, es wird langsam besser. Wenn du nachts alleine bist und das Baby nicht aufhört zu weinen: Baby sicher ablegen, kurz in ein anderes Zimmer gehen, durchatmen. Das ist Selbstfürsorge, kein Versagen.",
     developmentHint:
       "Intensive Entwicklungsphase (Woche 4–6): Das Gehirn verarbeitet die neue Umgebung intensiv — alle Sinne werden aktiver. Mehr Quengeln, Schlafschwierigkeiten und Nähebedarf in dieser Zeit sind biologisch normal. Quelle: AAP Developmental Surveillance.",
-    miaContext:
-      "Baby ist 2–6 Wochen alt. Erste soziale Laute entstehen, Weinpeak um Woche 6. Koliken möglich. Typische Themen: Schreiphasen, Erschöpfung der Eltern, erstes Lächeln, Bindung.",
   },
 
   // ─── MONAT 1–3 ─────────────────────────────────────────────────────────────
@@ -105,8 +98,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Kontrastreiche Muster zeigen (Schwarz-Weiß, Gesichter). Auf jedes Lächeln reagieren und wiederholen — das ist Dialog-Lernen.",
     forParents:
       "Wenn du dich oft leer, abgeschnitten oder traurig fühlst — auch als Vater — ist das kein Zeichen von Schwäche. Postpartale Depressionen kommen bei Vätern in 10 % der Fälle vor. Du musst das nicht alleine tragen.",
-    miaContext:
-      "Baby ist 6–9 Wochen alt. Erstes soziales Lächeln erscheint. Weinpeak oft hinter sich. Themen: Koliken, Lächeln, erste soziale Verbindung, Erschöpfung.",
   },
 
   {
@@ -130,8 +121,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Jetzt ist ein guter Zeitpunkt, eine sanfte Schlaf-Routine einzuführen — nicht als strenger Zeitplan, sondern als Signale: Baden → Stillen/Füttern → Schlaflied. Vorhersehbarkeit hilft dem Gehirn, sich zu beruhigen.",
     developmentHint:
       "Intensive Entwicklungsphase (Woche 7–10): Das Gehirn baut neuronale Vernetzungen für Mustererkennung auf — das Baby erkennt Muster in Bildern, Klängen und Bewegungen. Mehr Quengeln und Nähebedarf sind typisch. Quelle: AAP.",
-    miaContext:
-      "Baby ist 9–13 Wochen alt. Hände werden entdeckt, lautes Lachen erscheint. Wachphasen länger. Themen: Schlaf-Routine, Spielen, Bauchlage, Entwicklungsfreude.",
   },
 
   // ─── MONAT 3–6 ─────────────────────────────────────────────────────────────
@@ -157,8 +146,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Die Schlafregression um Monat 4 trifft viele Eltern unvorbereitet — gerade wenn es endlich besser geworden war. Sie ist biologisch bedingt: Schlafzyklen reifen, das Baby wacht in leichteren Phasen öfter auf. Das geht vorbei. Konsistenz in der Routine hilft.",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 3–5): Das Gehirn verarbeitet Übergänge — Licht, Klang, Bewegung, Stimmungen werden als Kontinuum wahrgenommen. Mehr Quengeln ist typisch. Quelle: AAP.",
-    miaContext:
-      "Baby ist 3–4 Monate alt. Gezieltes Greifen beginnt, Babbling startet, Schlafregression Monat 4 möglich. Themen: Schlaf, Greifen, Spielzeug, Überstimulation.",
   },
 
   {
@@ -182,8 +169,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Wenn du noch stillst und Beikost einführst: Beides kombinieren ist problemlos, solange du willst. Die WHO empfiehlt Stillen bis mindestens 6 Monate, gerne länger. Es gibt kein Richtig oder Falsch.",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 4–6): Baby versteht Ursache und Wirkung bewusster, Objektpermanenz beginnt. Das Kind merkt: Dinge existieren weiter, auch wenn sie nicht sichtbar sind. Quelle: AAP, NIH StatPearls.",
-    miaContext:
-      "Baby ist 4–6 Monate alt. Dreht sich, sitzt mit Unterstützung, Beikost steht an, Ursache-Wirkung beginnt. Themen: Beikost einführen, Bauchlage, Spielen, Fremdeln kündigt sich an.",
   },
 
   // ─── MONAT 6–9 ─────────────────────────────────────────────────────────────
@@ -209,8 +194,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Fremdeln ist für Großeltern und Verwandte oft schmerzhaft. Erkläre ihnen: Das ist ein Zeichen gesunder Bindung, kein Persönlichkeitsproblem des Kindes. Es geht vorbei — Geduld und kein Zwang helfen.",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 6–7): Baby versteht räumliche Beziehungen und Entfernungen. Trennungsangst und Objektpermanenz entstehen gleichzeitig. Quelle: AAP, NIH StatPearls.",
-    miaContext:
-      "Baby ist 6–7 Monate alt. Sitzt mit Unterstützung, Fremdeln beginnt, Pinzettengriff entwickelt sich. Themen: Fremdeln erklären, Babyproofing beginnen, Beikost weiterentwickeln.",
   },
 
   {
@@ -232,8 +215,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Wohnung babyproofing: Steckdosen, Schranktüren, kleine Gegenstände entfernen. Eine sichere Umgebung gibt dir Entspannung und dem Baby Freiheit.",
     forParents:
       "Mit der Mobilität beginnt die 'Augen-überall'-Phase. Das ist real erschöpfend. Babyproofing schafft Sicherheit — du musst nicht jede Sekunde dabei sein, wenn die Umgebung sicher ist. Das ist keine schlechte Elternschaft, das ist kluge Planung.",
-    miaContext:
-      "Baby ist 7–9 Monate alt. Krabbelt/robbt, Trennungsangst stark, versteht 'Nein'. Themen: Babyproofing, Trennungsangst, Schlaf, Fortbewegung fördern.",
   },
 
   // ─── MONAT 9–12 ────────────────────────────────────────────────────────────
@@ -259,8 +240,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Der erste Geburtstag ist auch dein Jahrestag als Elternteil. Ein Jahr durchgemacht, gewachsen, nicht aufgegeben — das verdient echte Anerkennung, auch von dir selbst. Nimm dir einen Moment: Was hat dich überrascht? Was hat dich stolz gemacht?",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 9–10): Baby ordnet die Welt in Kategorien — alle Hunde sind 'Hunde'. Konstruktives Spielen (Stapeln, Sortieren) ist ein Ausdruck dieser kognitiven Reifung. Quelle: NIH StatPearls, AAP.",
-    miaContext:
-      "Baby ist 9–12 Monate alt. Erste Wörter, Objektpermanenz, zeigt auf Dinge. Themen: erste Wörter fördern, Trennungsangst, erster Geburtstag, Schlaf.",
   },
 
   // ─── MONAT 12–18 ───────────────────────────────────────────────────────────
@@ -286,8 +265,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Trotz ist kein böses Verhalten — es ist Selbstausdruck ohne sprachliche Mittel. Das Kind ist frustriert, nicht manipulativ. Ruhig bleiben und die Emotion benennen ('Du bist gerade wütend, weil...') hilft langfristig.",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 12–14): Kind versteht, dass es verschiedene Wege zum gleichen Ziel gibt — es plant und wählt Strategien (Piaget: präoperationale Phase beginnt). Quelle: NIH StatPearls, AAP.",
-    miaContext:
-      "Kind ist 12–15 Monate alt. Erste Schritte, 3–10 Wörter, erste Trotzanfälle. Themen: Laufen lernen, Trotz, Wortschatz fördern, Essen.",
   },
 
   {
@@ -309,8 +286,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Wahlmöglichkeiten geben ('Willst du das rote oder das blaue?') gibt dem Kind Gefühl von Kontrolle — und reduziert Trotz erheblich.",
     forParents:
       "Du kannst nicht zu viel vorlesen. Kinder, denen täglich vorgelesen wird, haben mit 5 Jahren einen um Jahre größeren Wortschatz. 10 Minuten am Tag reichen — das gleiche Buch 20 Mal ist völlig normal und gut.",
-    miaContext:
-      "Kind ist 15–18 Monate alt. 5–20 Wörter, Laufen sicher, Trotz deutlich. Themen: Sprache fördern, Vorlesen, Trotz-Strategien, Rollenspiel.",
   },
 
   // ─── MONAT 18–24 ───────────────────────────────────────────────────────────
@@ -336,8 +311,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "\"Ich mache das falsch\" ist in dieser Phase fast nie richtig. Liebevolles, konsequentes Elternsein — auch wenn es sich chaotisch anfühlt — ist genug. Kein Elternteil ist immer geduldig. Das Ziel ist nicht Perfektion.",
     developmentHint:
       "Intensive Entwicklungsphase (Monat 18–21): Kind versteht zunehmend abstrakte Prinzipien — fair/unfair, richtig/falsch. Regelverständnis und Autonomieanspruch wachsen gleichzeitig. Quelle: Piaget, AAP.",
-    miaContext:
-      "Kind ist 18–21 Monate alt. Erste 2-Wort-Sätze, starke Trotzphasen, Ich-Bewusstsein. Themen: Trotz-Strategien, Sprache, Grenzen setzen, Empathie.",
   },
 
   {
@@ -359,8 +332,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Vorlesen ist jetzt der stärkste Sprachbooster — 10 Minuten täglich, gern dasselbe Buch 20 Mal. Fragen stellen: 'Wo ist der Hund?' trainiert aktiv den Wortabruf.",
     forParents:
       "Trotzphasen intensivieren sich oft kurz vor dem zweiten Geburtstag. Das ist Piagets präoperationale Phase: abstrakte Prinzipien werden gespürt, aber noch nicht vollständig verstanden. Real erschöpfend, aber entwicklungsgesund.",
-    miaContext:
-      "Kind ist 21–24 Monate alt. Sprachexplosion, 2-Wort-Sätze, Parallelspiel. Themen: Wortschatz, Vorlesen, Trotz, Geschwister, sozialer Kontakt.",
   },
 
   // ─── MONAT 24–36 ───────────────────────────────────────────────────────────
@@ -384,8 +355,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Regeln erklären, nicht nur diktieren. 'Wir waschen Hände, damit keine Bakterien zu uns kommen' — das ist das Fundament für echte Regelakzeptanz.",
     forParents:
       "Das 'Warum?' kann erschöpfen — es ist aber Hochleistungskognition. Paarkommunikation leidet in dieser Phase oft im Trubel. Ein kurzes abendliches Check-in ('Wie geht es dir wirklich?') macht einen realen Unterschied.",
-    miaContext:
-      "Kind ist 24–30 Monate alt. Sätze mit 3+ Wörtern, echte Rollenspiele, erstes Regelverständnis. Themen: Warum-Fragen, Grenzen setzen, Freundschaften, Paarkommunikation.",
   },
 
   {
@@ -407,8 +376,6 @@ export const DEVELOPMENT_PHASES: DevelopmentPhase[] = [
       "Gemeinsam basteln, malen, bauen — Kreativprozesse fördern Sprache, Konzentration und Frustrationstoleranz gleichzeitig.",
     forParents:
       "In dieser Phase brauchen auch Paare manchmal eine Pause voneinander, nicht nur vom Kind. Gemeinsame Zeit — auch nur 15 Minuten abends — ist wichtig. Das Kind profitiert davon, wenn es euch gut geht.",
-    miaContext:
-      "Kind ist 30–36 Monate alt. Komplexe Sprache, erste Freundschaften, Potty Training. Themen: Geschwister, Töpfchentraining, Kindergarten-Vorbereitung, Paarpflege.",
   },
 ];
 
@@ -436,51 +403,4 @@ export function getPhaseForDate(birthDateISO: string, dateISO: string): Developm
     (new Date(dateISO).getTime() - new Date(birthDateISO).getTime()) / (7 * 24 * 60 * 60 * 1000)
   );
   return DEVELOPMENT_PHASES.find((p) => weeks >= p.weeksFrom && weeks < p.weeksTo) ?? null;
-}
-
-/** Nächste Phase */
-export function getNextPhase(currentId: string): DevelopmentPhase | null {
-  const idx = DEVELOPMENT_PHASES.findIndex((p) => p.id === currentId);
-  return idx >= 0 && idx < DEVELOPMENT_PHASES.length - 1
-    ? DEVELOPMENT_PHASES[idx + 1]
-    : null;
-}
-
-/** Wochen bis zur nächsten Phase */
-export function getWeeksUntilNextPhase(birthDateISO: string): number | null {
-  const weeks = getAgeWeeks(birthDateISO);
-  const current = getCurrentPhase(birthDateISO);
-  if (!current) return null;
-  return current.weeksTo - weeks;
-}
-
-/**
- * Kontext-String für Mia's System Prompt
- * Kombiniert Phase + nächste Phase + ggf. Entwicklungshinweis
- */
-export function buildMiaContext(birthDateISO: string, babyName: string): string {
-  const weeks = getAgeWeeks(birthDateISO);
-  const phase = getCurrentPhase(birthDateISO);
-  const next = phase ? getNextPhase(phase.id) : null;
-  const weeksUntilNext = getWeeksUntilNextPhase(birthDateISO);
-
-  if (!phase) {
-    return `${babyName} ist ${weeks} Wochen alt. Keine spezifische Entwicklungsphase verfügbar.`;
-  }
-
-  let ctx = `${babyName} ist ${weeks} Wochen alt (${phase.ageLabel}). ${phase.miaContext}`;
-
-  if (phase.developmentHint) {
-    ctx += ` Hinweis: ${phase.developmentHint}`;
-  }
-
-  if (next && weeksUntilNext !== null) {
-    if (weeksUntilNext <= 2) {
-      ctx += ` Die nächste Entwicklungsphase ("${next.title}") steht in ca. ${weeksUntilNext} Woche(n) bevor — mehr Quengeln oder Unruhe kann ein Vorzeichen sein.`;
-    } else {
-      ctx += ` Nächste Phase: "${next.title}" in ca. ${weeksUntilNext} Wochen.`;
-    }
-  }
-
-  return ctx;
 }

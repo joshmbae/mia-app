@@ -254,10 +254,10 @@ export default function NewProfileScreen() {
           numberOfLines={3}
         />
 
-        {/* Beschreibung für Mia */}
-        <Text style={styles.label}>Für Mia — freie Beschreibung</Text>
+        {/* Notizen */}
+        <Text style={styles.label}>Notizen</Text>
         <Text style={styles.fieldHint}>
-          Was soll Mia von Anfang an über {name || "dein Kind"} wissen? Z. B. Schlafgewohnheiten, Besonderheiten im Alltag, aktuelle Themen.
+          Was du über {name || "dein Kind"} festhalten möchtest — z. B. Schlafgewohnheiten oder Besonderheiten im Alltag.
         </Text>
         <TextInput
           style={[styles.input, styles.inputMultiline, { height: 110 }]}

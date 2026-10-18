@@ -22,14 +22,14 @@ const slides = [
   {
     key: "2",
     icon: "💡",
-    title: "Was ich kann",
-    text: "Ich helfe bei Schlafen, Stillen, Wochenbett und allen Alltagsfragen — rund um die Uhr, sofort.",
+    title: "Was dich erwartet",
+    text: "Ein Tagebuch für eure schönsten Momente, Still- & Schlaftracker, Gewichtsverlauf und Infos zu jeder Phase.",
   },
   {
     key: "3",
     icon: "🛡️",
     title: "Wichtig zu wissen",
-    text: "Ich bin keine Ärztin und kein Ersatz für deine Hebamme oder deinen Kinderarzt. Bei Notfällen immer 112 anrufen.",
+    text: "Mia ersetzt keine Hebamme und keinen Kinderarzt. Bei Notfällen immer 112 anrufen.",
     hasCheckbox: true,
   },
 ];

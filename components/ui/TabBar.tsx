@@ -1,29 +1,41 @@
 // ─── Schwebende, runde Tab-Leiste ────────────────────────────────────────────
+// Beschriftungen sind immer sichtbar (HIG/Material). Hinter der Leiste blendet
+// ein weicher Verlauf den Inhalt aus. Ohne Kind gibt es keine Leiste.
 
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, clay, fonts } from "../../utils/theme";
+import { colors, elevation, radius, size, soft, solid, space, tint } from "../../utils/theme";
 import { useFamily } from "../../utils/family";
 import { Squish } from "./Clay";
+import { T } from "./T";
 
 const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }> = {
   start: { on: "home", off: "home-outline", label: "Start" },
-  zeitstrahl: { on: "trail-sign", off: "trail-sign-outline", label: "Weg" },
-  wachstum: { on: "resize", off: "resize-outline", label: "Wachstum" },
+  zeitstrahl: { on: "map", off: "map-outline", label: "Weg" },
+  wachstum: { on: "trending-up", off: "trending-up-outline", label: "Wachstum" },
   buch: { on: "book", off: "book-outline", label: "Buch" },
 };
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { active } = useFamily();
-  const accent = active?.color ?? colors.coral;
+  if (!active) return null;
+  const accent = active.color;
+  const bottom = Math.max(insets.bottom, 14);
 
   return (
-    <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 14) }]} pointerEvents="box-none">
-      <View style={[styles.bar, clay(colors.ink, "soft")]}>
+    <View style={[styles.wrap, { height: bottom + size.tabBar + space.xl }]} pointerEvents="box-none">
+      <LinearGradient
+        colors={[tint(colors.bg, 0), colors.bg]}
+        locations={[0, 0.55]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <View style={[styles.bar, { bottom }, elevation.float]} accessibilityRole="tablist">
         {state.routes.map((route, index) => {
           const meta = ICONS[route.name];
           if (!meta) return null;
@@ -38,10 +50,12 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
                 const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
                 if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
               }}
-              style={[styles.item, focused && { backgroundColor: accent }]}
+              style={[styles.item, focused && { backgroundColor: soft(accent) }]}
             >
-              <Ionicons name={focused ? meta.on : meta.off} size={22} color={focused ? colors.onAccent : colors.muted} />
-              {focused && <Text style={styles.label}>{meta.label}</Text>}
+              <Ionicons name={focused ? meta.on : meta.off} size={size.icon.md} color={focused ? solid(accent) : colors.muted} />
+              <T variant="caption" color={focused ? solid(accent) : colors.muted} numberOfLines={1} maxFontSizeMultiplier={1.2} style={styles.label}>
+                {meta.label}
+              </T>
             </Squish>
           );
         })}
@@ -51,27 +65,28 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { position: "absolute", left: 20, right: 20, alignItems: "center" },
+  wrap: { position: "absolute", left: 0, right: 0, bottom: 0, alignItems: "center" },
   bar: {
+    position: "absolute",
+    left: space.gutter,
+    right: space.gutter,
+    maxWidth: 480,
+    alignSelf: "center",
+    height: size.tabBar,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     backgroundColor: colors.surface,
-    borderRadius: 36,
-    padding: 8,
-    gap: 4,
-    width: "100%",
-    maxWidth: 440,
+    borderRadius: radius.pill,
+    padding: space.xs - 2,
+    gap: space.xxs,
   },
   item: {
-    flexDirection: "row",
+    flex: 1,
+    height: size.tabBar - 12,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    height: 52,
-    minWidth: 52,
-    borderRadius: 26,
-    paddingHorizontal: 14,
+    gap: 2,
   },
-  label: { fontFamily: fonts.bodyHeavy, fontSize: 14, color: colors.onAccent },
+  label: { fontFamily: "Nunito_800ExtraBold" },
 });

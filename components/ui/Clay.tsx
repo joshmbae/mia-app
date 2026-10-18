@@ -1,31 +1,26 @@
 // ─── Clay-Grundbausteine: Karte, Knopf, runder Icon-Knopf, Pille ─────────────
 
 import React, { useRef } from "react";
-import {
-  Animated,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-  ActivityIndicator,
-  PressableProps,
-} from "react-native";
+import { ActivityIndicator, Animated, Pressable, PressableProps, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, clay, clayButton, fonts, radius } from "../../utils/theme";
+import { colors, ctaShadow, elevation, radius, size, solid, space } from "../../utils/theme";
 import { tap } from "../../utils/haptics";
+import { T } from "./T";
 
 type IconName = keyof typeof Ionicons.glyphMap;
+type Elevation = keyof typeof elevation;
 
 // ─── Federnder Druck ──────────────────────────────────────────────────────────
 
-/** Pressable, das beim Drücken leicht einsinkt und zurückfedert */
+/**
+ * Pressable, das beim Drücken leicht einsinkt und zurückfedert. Haptik nur,
+ * wenn ausdrücklich gewünscht (Hauptaktionen) — nicht bei jedem Chip.
+ */
 export function Squish({
   style,
   children,
   onPress,
-  haptic = true,
+  haptic = false,
   disabled,
   ...rest
 }: Omit<PressableProps, "style" | "children"> & {
@@ -34,8 +29,7 @@ export function Squish({
   haptic?: boolean;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const to = (v: number) =>
-    Animated.spring(scale, { toValue: v, friction: 5, tension: 260, useNativeDriver: true }).start();
+  const to = (v: number) => Animated.spring(scale, { toValue: v, friction: 6, tension: 280, useNativeDriver: true }).start();
   // Eigene Transformationen (z. B. leichte Drehung) bleiben erhalten, die Skalierung kommt dazu
   const flat = StyleSheet.flatten(style) ?? {};
   const own = Array.isArray(flat.transform) ? flat.transform : [];
@@ -43,13 +37,14 @@ export function Squish({
     <AnimatedPressable
       {...rest}
       disabled={disabled}
-      onPressIn={() => to(0.95)}
+      accessibilityState={{ disabled: !!disabled, ...(rest.accessibilityState ?? {}) }}
+      onPressIn={() => to(0.96)}
       onPressOut={() => to(1)}
       onPress={(e) => {
         if (haptic) tap();
         onPress?.(e);
       }}
-      style={[flat, { transform: [...own, { scale }] }, disabled && { opacity: 0.5 }]}
+      style={[flat, { transform: [...own, { scale }] }]}
     >
       {children}
     </AnimatedPressable>
@@ -64,20 +59,24 @@ export function ClayCard({
   children,
   style,
   color = colors.surface,
-  glow = colors.coral,
-  strength = "normal",
+  lift = "raised",
   onPress,
   accessibilityLabel,
+  // Ältere Props — werden ignoriert, Schatten kommen jetzt aus `lift`
+  glow: _glow,
+  strength,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   color?: string;
-  glow?: string;
-  strength?: "soft" | "normal" | "strong";
+  lift?: Elevation;
   onPress?: () => void;
   accessibilityLabel?: string;
+  glow?: string;
+  strength?: "soft" | "normal" | "strong";
 }) {
-  const base = [styles.card, { backgroundColor: color }, clay(glow, strength), style];
+  const level: Elevation = strength === "strong" ? "float" : lift;
+  const base = [styles.card, { backgroundColor: color }, elevation[level], style];
   if (onPress) {
     return (
       <Squish style={base} onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel}>
@@ -90,13 +89,18 @@ export function ClayCard({
 
 // ─── Knopf ────────────────────────────────────────────────────────────────────
 
+/**
+ * solid: der Hauptknopf (dunkle Füllfarbe, weiße Schrift, farbiger Schatten)
+ * soft:  weißer Knopf mit farbiger Schrift
+ * ghost: nur Schrift
+ */
 export function ClayButton({
   label,
   onPress,
   icon,
   color = colors.coral,
   variant = "solid",
-  size = "lg",
+  size: sz = "lg",
   loading,
   disabled,
   style,
@@ -111,29 +115,28 @@ export function ClayButton({
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
-  const solid = variant === "solid";
-  const fg = solid ? colors.onAccent : variant === "soft" ? colors.ink : color;
-  const bg = solid ? color : variant === "soft" ? colors.surface : "transparent";
+  const off = disabled && !loading;
+  const fill = solid(color);
+  const fg = off ? colors.muted : variant === "solid" ? colors.onAccent : variant === "soft" ? fill : fill;
+  const bg = off ? colors.line : variant === "solid" ? fill : variant === "soft" ? colors.surface : "transparent";
+  const shadow = off || variant === "ghost" ? null : variant === "solid" ? ctaShadow(color) : elevation.raised;
   return (
     <Squish
       onPress={onPress}
       disabled={disabled || loading}
+      haptic={variant === "solid"}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[
-        styles.button,
-        size === "md" ? styles.buttonMd : styles.buttonLg,
-        { backgroundColor: bg },
-        solid ? clayButton(color) : variant === "soft" ? clay(color, "soft") : null,
-        style,
-      ]}
+      style={[styles.button, { height: sz === "md" ? size.buttonSm : size.button, backgroundColor: bg }, shadow, style]}
     >
       {loading ? (
         <ActivityIndicator color={fg} />
       ) : (
         <>
-          {icon && <Ionicons name={icon} size={size === "md" ? 18 : 22} color={fg} />}
-          <Text style={[styles.buttonText, size === "md" && styles.buttonTextMd, { color: fg }]}>{label}</Text>
+          {icon && <Ionicons name={icon} size={sz === "md" ? size.icon.sm : size.icon.md} color={fg} />}
+          <T variant={sz === "md" ? "buttonSm" : "button"} color={fg} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ flexShrink: 1 }}>
+            {label}
+          </T>
         </>
       )}
     </Squish>
@@ -148,7 +151,6 @@ export function IconButton({
   label,
   color = colors.ink,
   background = colors.surface,
-  size = 44,
   style,
 }: {
   icon: IconName;
@@ -164,66 +166,68 @@ export function IconButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      hitSlop={6}
-      style={[
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: background, alignItems: "center", justifyContent: "center" },
-        clay(colors.coral, "soft"),
-        style,
-      ]}
+      hitSlop={4}
+      style={[styles.iconButton, { backgroundColor: background }, elevation.raised, style]}
     >
-      <Ionicons name={icon} size={Math.round(size * 0.46)} color={color} />
+      <Ionicons name={icon} size={size.icon.md} color={color} />
     </Squish>
   );
 }
 
 // ─── Pille ────────────────────────────────────────────────────────────────────
 
+/** Kleines Etikett. Ohne Angabe in Minze; `color` ist die Akzentfarbe. */
 export function Pill({
   label,
-  color = colors.mintDeep,
-  background = colors.mintSoft,
+  color = colors.mint,
+  background,
   icon,
+  center,
   style,
 }: {
   label: string;
   color?: string;
   background?: string;
   icon?: IconName;
+  center?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
+  const fg = solid(color);
   return (
-    <View style={[styles.pill, { backgroundColor: background }, style]}>
-      {icon && <Ionicons name={icon} size={13} color={color} />}
-      <Text style={[styles.pillText, { color }]} numberOfLines={1}>
+    <View style={[styles.pill, { backgroundColor: background ?? colors.surfaceSoft, alignSelf: center ? "center" : "flex-start" }, style]}>
+      {icon && <Ionicons name={icon} size={14} color={fg} />}
+      <T variant="chip" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
-      </Text>
+      </T>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg, padding: 16 },
+  card: { borderRadius: radius.lg, padding: space.md },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
+    gap: space.xs,
     borderRadius: radius.pill,
-    paddingHorizontal: 22,
+    paddingHorizontal: space.lg,
   },
-  buttonLg: { height: 60 },
-  buttonMd: { height: 48, paddingHorizontal: 18 },
-  buttonText: { fontFamily: fonts.display, fontSize: 19 },
-  buttonTextMd: { fontSize: 16 },
+  iconButton: {
+    width: size.touch,
+    height: size.touch,
+    borderRadius: radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   pill: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    alignSelf: "flex-start",
+    gap: space.xxs + 2,
+    minHeight: size.pill,
     borderRadius: radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xxs,
     maxWidth: "100%",
   },
-  pillText: { fontFamily: fonts.bodyHeavy, fontSize: 13 },
 });

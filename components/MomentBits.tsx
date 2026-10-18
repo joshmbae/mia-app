@@ -2,32 +2,37 @@
 
 import React from "react";
 import { Image, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
-import { colors, fonts, radius, tint } from "../utils/theme";
+import { colors, emoji as emojiSize, radius, soft, space } from "../utils/theme";
+import { T } from "./ui/T";
 
-/** Foto eines Moments – oder, ohne Foto, ein großer Emoji-Sticker in seiner Farbe */
+/** Foto eines Moments – oder, ohne Foto, ein großer Emoji-Sticker auf seiner hellen Farbe */
 export function MomentPicture({
   photo,
   emoji,
   color,
   style,
-  emojiSize = 34,
+  emojiSize: size = 32,
+  label,
 }: {
   photo?: string;
   emoji: string;
   color: string;
   style?: StyleProp<ViewStyle>;
-  emojiSize?: number;
+  emojiSize?: 16 | 20 | 24 | 32 | 44 | 64 | 96;
+  label?: string;
 }) {
   if (photo) {
     return (
       <View style={[styles.frame, style]}>
-        <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <Image source={{ uri: photo }} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityLabel={label} />
       </View>
     );
   }
   return (
-    <View style={[styles.frame, { backgroundColor: tint(color, 0.18), alignItems: "center", justifyContent: "center" }, style]}>
-      <Text style={{ fontSize: emojiSize }}>{emoji}</Text>
+    <View style={[styles.frame, { backgroundColor: soft(color), alignItems: "center", justifyContent: "center" }, style]}>
+      <Text style={emojiSize(size)} accessibilityElementsHidden importantForAccessibility="no">
+        {emoji}
+      </Text>
     </View>
   );
 }
@@ -36,17 +41,18 @@ export function MomentPicture({
 export function EmptyHint({ emoji, title, text }: { emoji: string; title: string; text: string }) {
   return (
     <View style={styles.empty}>
-      <Text style={styles.emptyEmoji}>{emoji}</Text>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyText}>{text}</Text>
+      <Text style={[emojiSize(44), { marginBottom: space.xxs }]}>{emoji}</Text>
+      <T variant="h2" align="center">
+        {title}
+      </T>
+      <T variant="body" align="center">
+        {text}
+      </T>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   frame: { overflow: "hidden", borderRadius: radius.md, backgroundColor: colors.surfaceSoft },
-  empty: { alignItems: "center", paddingVertical: 28, paddingHorizontal: 20, gap: 6 },
-  emptyEmoji: { fontSize: 44, marginBottom: 4 },
-  emptyTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.ink, textAlign: "center" },
-  emptyText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.inkSoft, textAlign: "center" },
+  empty: { alignItems: "center", paddingVertical: space.lg, paddingHorizontal: space.md, gap: space.xs },
 });

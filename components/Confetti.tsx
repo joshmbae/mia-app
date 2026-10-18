@@ -3,11 +3,13 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from "react-native";
 import { colors } from "../utils/theme";
+import { useReduceMotion } from "../utils/a11y";
 
 const PIECES = 28;
 const PALETTE = [colors.coral, colors.sun, colors.sky, colors.mint, colors.lilac, "#E8789A"];
 
 export function Confetti({ onDone }: { onDone?: () => void }) {
+  const reduceMotion = useReduceMotion();
   const { width, height } = useWindowDimensions();
   const pieces = useRef(
     Array.from({ length: PIECES }, (_, i) => ({
@@ -23,6 +25,10 @@ export function Confetti({ onDone }: { onDone?: () => void }) {
   ).current;
 
   useEffect(() => {
+    if (reduceMotion) {
+      onDone?.();
+      return;
+    }
     const anim = Animated.parallel(
       pieces.map((p) =>
         Animated.timing(p.progress, {
@@ -36,8 +42,9 @@ export function Confetti({ onDone }: { onDone?: () => void }) {
     );
     anim.start(({ finished }) => finished && onDone?.());
     return () => anim.stop();
-  }, []);
+  }, [reduceMotion]);
 
+  if (reduceMotion) return null;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {pieces.map((p, i) => (

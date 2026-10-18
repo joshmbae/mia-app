@@ -1,24 +1,67 @@
 // ─── Bildschirm-Rahmen: Pfirsich-Grund mit weichen Blobs, Kopfzeile ──────────
 
 import React from "react";
-import { ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, KeyboardAvoidingView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { colors, fonts, space } from "../../utils/theme";
+import { colors, size, space } from "../../utils/theme";
 import { IconButton } from "./Clay";
+import { T } from "./T";
 
-type BlobSet = "warm" | "cool" | "none";
+type BlobSet = "warm" | "cool" | "sun" | "none";
 
+const BLOBS: Record<Exclude<BlobSet, "none">, [string, string]> = {
+  warm: [colors.coralSoft, colors.skySoft],
+  cool: [colors.skySoft, colors.sunSoft],
+  sun: [colors.sunSoft, colors.mintSoft],
+};
+
+/** Zwei weiche, unregelmäßige Formen im Hintergrund — dezent, nie hinter Formularen */
 export function Blobs({ variant = "warm" }: { variant?: BlobSet }) {
   if (variant === "none") return null;
-  const first = variant === "warm" ? colors.coralSoft : colors.skySoft;
-  const second = variant === "warm" ? colors.skySoft : colors.sunSoft;
+  const [first, second] = BLOBS[variant];
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <View style={[styles.blob, { width: 280, height: 280, backgroundColor: first, top: -110, right: -90 }]} />
-      <View style={[styles.blob, { width: 200, height: 200, backgroundColor: second, top: 320, left: -120 }]} />
+      <View
+        style={[
+          styles.blob,
+          {
+            width: 300,
+            height: 260,
+            backgroundColor: first,
+            top: -120,
+            right: -110,
+            borderTopLeftRadius: 150,
+            borderTopRightRadius: 120,
+            borderBottomRightRadius: 160,
+            borderBottomLeftRadius: 130,
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.blob,
+          {
+            width: 210,
+            height: 190,
+            backgroundColor: second,
+            top: 360,
+            left: -130,
+            borderTopLeftRadius: 90,
+            borderTopRightRadius: 110,
+            borderBottomRightRadius: 95,
+            borderBottomLeftRadius: 120,
+          },
+        ]}
+      />
     </View>
   );
+}
+
+/** Platz unter dem Inhalt, damit nichts hinter der schwebenden Tab-Leiste verschwindet */
+export function useTabBarSpace(): number {
+  const insets = useSafeAreaInsets();
+  return Math.max(insets.bottom, 14) + size.tabBar + space.xl;
 }
 
 export function Screen({
@@ -26,7 +69,7 @@ export function Screen({
   scroll = true,
   blobs = "warm",
   contentStyle,
-  bottomSpace = 40,
+  bottomSpace = space.xxl,
   keyboard = false,
   scrollRef,
 }: {
@@ -44,6 +87,7 @@ export function Screen({
       contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }, contentStyle]}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
     >
       {children}
     </ScrollView>
@@ -66,7 +110,10 @@ export function Screen({
   );
 }
 
-/** Kopfzeile mit Zurück-Knopf, Titel und optionalem Element rechts */
+/**
+ * Kopfzeile. In Tabs ohne Zurück-Knopf, in Unterseiten mit Zurück (‹) und in
+ * Modals mit Schließen (×). Rechts optional eine Aktion, z. B. "Speichern".
+ */
 export function Header({
   title,
   subtitle,
@@ -93,14 +140,14 @@ export function Header({
       )}
       <View style={styles.headerText}>
         {title ? (
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <T variant="h1" accessibilityRole="header" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
             {title}
-          </Text>
+          </T>
         ) : null}
         {subtitle ? (
-          <Text style={styles.headerSub} numberOfLines={1}>
+          <T variant="small" numberOfLines={1}>
             {subtitle}
-          </Text>
+          </T>
         ) : null}
       </View>
       {right}
@@ -111,10 +158,8 @@ export function Header({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg, overflow: "hidden" },
   flex: { flex: 1 },
-  content: { paddingHorizontal: space.lg, paddingTop: 8 },
-  blob: { position: "absolute", borderRadius: 999 },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 18, minHeight: 48 },
+  content: { paddingHorizontal: space.gutter, paddingTop: space.xs },
+  blob: { position: "absolute" },
+  header: { flexDirection: "row", alignItems: "center", gap: space.sm, marginBottom: space.lg, minHeight: size.touch + 4 },
   headerText: { flex: 1 },
-  headerTitle: { fontFamily: fonts.displayBold, fontSize: 26, lineHeight: 30, color: colors.ink },
-  headerSub: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.inkSoft, marginTop: 2 },
 });

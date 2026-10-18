@@ -1,85 +1,118 @@
 // ─── Formular-Bausteine: Feld, Datumswahl, Auswahl-Chips, Farbwahl ───────────
 
-import React, { useState } from "react";
-import { Platform, StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
+import React, { useId, useState } from "react";
+import { InputAccessoryView, Keyboard, Platform, StyleSheet, TextInput, TextInputProps, View } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
-import { colors, clay, fonts, radius, tint } from "../../utils/theme";
+import { COLOR_NAMES, colors, elevation, fonts, MAX_FONT_SCALE, radius, size, solid, space, type } from "../../utils/theme";
 import { formatDate, parseISODate, toISODate, todayISO } from "../../utils/dates";
 import { Squish } from "./Clay";
+import { T } from "./T";
 
 export function FieldLabel({ children, hint }: { children: string; hint?: string }) {
   return (
     <View style={styles.labelWrap}>
-      <Text style={styles.label}>{children}</Text>
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      <T variant="label">{children}</T>
+      {hint ? (
+        <T variant="small" style={{ marginTop: space.xxs }}>
+          {hint}
+        </T>
+      ) : null}
     </View>
   );
 }
 
+/**
+ * Eingabefeld: eingedrückt statt erhaben, optional mit Einheit ("cm") im Feld.
+ * Bei Zahlentastaturen gibt es auf iOS eine "Fertig"-Leiste.
+ */
 export function Field({
   label,
   hint,
+  unit,
   multiline,
   style,
   ...input
-}: TextInputProps & { label?: string; hint?: string }) {
+}: TextInputProps & { label?: string; hint?: string; unit?: string }) {
   const [focused, setFocused] = useState(false);
+  const accessoryId = useId();
+  const numeric = input.keyboardType === "decimal-pad" || input.keyboardType === "number-pad";
+  const withAccessory = numeric && Platform.OS === "ios";
   return (
     <View style={styles.field}>
       {label ? <FieldLabel hint={hint}>{label}</FieldLabel> : null}
-      <TextInput
-        {...input}
-        multiline={multiline}
-        placeholderTextColor={colors.muted}
-        onFocus={(e) => {
-          setFocused(true);
-          input.onFocus?.(e);
-        }}
-        onBlur={(e) => {
-          setFocused(false);
-          input.onBlur?.(e);
-        }}
-        style={[
-          styles.input,
-          multiline && styles.inputMultiline,
-          focused && styles.inputFocused,
-          clay(colors.coral, "soft"),
-          style,
-        ]}
-        textAlignVertical={multiline ? "top" : "center"}
-        accessibilityLabel={label ?? input.placeholder}
-      />
+      <View style={[styles.inputWrap, multiline && styles.inputWrapMultiline, focused && styles.inputFocused, elevation.pressed]}>
+        <TextInput
+          {...input}
+          multiline={multiline}
+          placeholderTextColor={colors.faint}
+          maxFontSizeMultiplier={MAX_FONT_SCALE.body}
+          inputAccessoryViewID={withAccessory ? accessoryId : input.inputAccessoryViewID}
+          onFocus={(e) => {
+            setFocused(true);
+            input.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            input.onBlur?.(e);
+          }}
+          style={[styles.input, multiline && styles.inputMultiline, style]}
+          textAlignVertical={multiline ? "top" : "center"}
+          accessibilityLabel={input.accessibilityLabel ?? (unit ? `${label ?? ""} in ${unit}` : label ?? input.placeholder)}
+        />
+        {unit ? (
+          <T variant="bodyStrong" color={colors.muted} style={styles.unit}>
+            {unit}
+          </T>
+        ) : null}
+      </View>
+      {withAccessory && (
+        <InputAccessoryView nativeID={accessoryId}>
+          <View style={styles.accessory}>
+            <Squish onPress={() => Keyboard.dismiss()} accessibilityRole="button" accessibilityLabel="Tastatur schließen" style={styles.accessoryBtn}>
+              <T variant="chip" color={colors.coralDeep}>
+                Fertig
+              </T>
+            </Squish>
+          </View>
+        </InputAccessoryView>
+      )}
     </View>
   );
 }
 
-/** Auswahl aus wenigen Optionen als Chips */
+/** Auswahl aus wenigen Optionen (Radio-Gruppe) als Chips */
 export function ChoiceChips<T extends string>({
   options,
   value,
   onChange,
   color = colors.coral,
+  label,
 }: {
   options: { value: T; label: string; icon?: keyof typeof Ionicons.glyphMap }[];
   value: T | undefined;
   onChange: (v: T) => void;
   color?: string;
+  label?: string;
 }) {
+  const fill = solid(color);
   return (
-    <View style={styles.chips}>
+    <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o) => {
         const active = o.value === value;
         return (
           <Squish
             key={o.value}
             onPress={() => onChange(o.value)}
-            accessibilityRole="button"
-            accessibilityState={{ selected: active }}
-            style={[styles.chip, active ? { backgroundColor: color } : styles.chipIdle]}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: active }}
+            accessibilityLabel={o.label}
+            style={[styles.chip, active ? { backgroundColor: fill, borderColor: fill } : null]}
           >
-            {o.icon && <Ionicons name={o.icon} size={15} color={active ? colors.onAccent : colors.inkSoft} />}
-            <Text style={[styles.chipText, active && { color: colors.onAccent }]}>{o.label}</Text>
+            {o.icon && <Ionicons name={o.icon} size={size.icon.sm - 2} color={active ? colors.onAccent : colors.inkSoft} />}
+            <T variant="chip" color={active ? colors.onAccent : colors.ink}>
+              {o.label}
+            </T>
           </Squish>
         );
       })}
@@ -90,17 +123,17 @@ export function ChoiceChips<T extends string>({
 /** Farbwahl für ein Kind */
 export function ColorPicker({ options, value, onChange }: { options: string[]; value: string; onChange: (c: string) => void }) {
   return (
-    <View style={styles.colors}>
+    <View style={styles.colors} accessibilityRole="radiogroup" accessibilityLabel="Farbe">
       {options.map((c) => (
         <Squish
           key={c}
           onPress={() => onChange(c)}
-          accessibilityRole="button"
-          accessibilityLabel={`Farbe ${c}`}
-          accessibilityState={{ selected: c === value }}
-          style={[styles.swatch, { backgroundColor: c }, c === value && { borderColor: colors.ink }]}
+          accessibilityRole="radio"
+          accessibilityLabel={COLOR_NAMES[c] ?? "Farbe"}
+          accessibilityState={{ checked: c === value }}
+          style={[styles.swatch, { backgroundColor: c }, c === value && styles.swatchActive]}
         >
-          {c === value ? <Ionicons name="checkmark" size={20} color={colors.onAccent} /> : null}
+          {c === value ? <Ionicons name="checkmark" size={size.icon.md} color={colors.onAccent} /> : null}
         </Squish>
       ))}
     </View>
@@ -136,10 +169,11 @@ export function DateField({
       <View style={styles.chips}>
         {quick && <DateChip label="Heute" active={value === today} color={color} onPress={() => onChange(today)} />}
         {quick && <DateChip label="Gestern" active={value === yesterday} color={color} onPress={() => onChange(yesterday)} />}
-        <View style={[styles.chip, styles.chipIdle, { paddingVertical: 0 }]}>
-          <Ionicons name="calendar-outline" size={15} color={colors.inkSoft} />
+        <View style={styles.chip}>
+          <Ionicons name="calendar-outline" size={size.icon.sm - 2} color={colors.inkSoft} />
           {React.createElement("input", {
             type: "date",
+            lang: "de-DE",
             value,
             max: maximumDate ? toISODate(maximumDate) : undefined,
             min: minimumDate ? toISODate(minimumDate) : undefined,
@@ -148,10 +182,10 @@ export function DateField({
             style: {
               border: "none",
               background: "transparent",
-              fontFamily: "Nunito_700Bold, sans-serif",
+              fontFamily: fonts.bodyHeavy,
               fontSize: 14,
               color: colors.ink,
-              height: 40,
+              height: 36,
               outline: "none",
             },
           })}
@@ -174,14 +208,14 @@ export function DateField({
         />
       </View>
       {open && (
-        <View style={styles.pickerWrap}>
+        <View style={[styles.pickerWrap, elevation.raised]}>
           <DateTimePicker
             value={parseISODate(value)}
             mode="date"
             display={Platform.OS === "ios" ? "inline" : "default"}
             maximumDate={maximumDate}
             minimumDate={minimumDate}
-            accentColor={color}
+            accentColor={solid(color)}
             locale="de-DE"
             onChange={(event, d) => {
               if (Platform.OS !== "ios") setOpen(false);
@@ -190,7 +224,9 @@ export function DateField({
           />
           {Platform.OS === "ios" && (
             <Squish onPress={() => setOpen(false)} style={styles.done} accessibilityRole="button">
-              <Text style={[styles.doneText, { color }]}>Fertig</Text>
+              <T variant="chip" color={solid(color)}>
+                Fertig
+              </T>
             </Squish>
           )}
         </View>
@@ -212,59 +248,73 @@ function DateChip({
   icon?: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
 }) {
+  const fill = solid(color);
   return (
     <Squish
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      style={[styles.chip, active ? { backgroundColor: color } : styles.chipIdle]}
+      accessibilityRole="radio"
+      accessibilityState={{ checked: active }}
+      style={[styles.chip, active ? { backgroundColor: fill, borderColor: fill } : null]}
     >
-      {icon && <Ionicons name={icon} size={15} color={active ? colors.onAccent : colors.inkSoft} />}
-      <Text style={[styles.chipText, active && { color: colors.onAccent }]}>{label}</Text>
+      {icon && <Ionicons name={icon} size={size.icon.sm - 2} color={active ? colors.onAccent : colors.inkSoft} />}
+      <T variant="chip" color={active ? colors.onAccent : colors.ink}>
+        {label}
+      </T>
     </Squish>
   );
 }
 
 const styles = StyleSheet.create({
-  field: { marginBottom: 18, alignSelf: "stretch" },
-  labelWrap: { marginBottom: 8, paddingHorizontal: 4 },
-  label: { fontFamily: fonts.bodyHeavy, fontSize: 12, letterSpacing: 0.9, textTransform: "uppercase", color: colors.muted },
-  hint: { fontFamily: fonts.body, fontSize: 13, color: colors.inkSoft, marginTop: 3, lineHeight: 18 },
-  input: {
-    backgroundColor: colors.surface,
+  field: { marginBottom: space.md + 4, alignSelf: "stretch" },
+  labelWrap: { marginBottom: space.xs, paddingHorizontal: space.xxs },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    minHeight: size.input,
+    backgroundColor: colors.surfaceSoft,
     borderRadius: radius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontFamily: fonts.bodyBold,
+    borderWidth: 2,
+    borderColor: colors.line,
+    paddingRight: space.md,
+  },
+  inputWrapMultiline: { alignItems: "flex-start" },
+  inputFocused: { borderColor: colors.peach, backgroundColor: colors.surface },
+  input: {
+    flex: 1,
+    minHeight: size.input - 4,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    ...type.bodyStrong,
     fontSize: 16,
     color: colors.ink,
-    borderWidth: 2,
-    borderColor: "transparent",
   },
-  inputMultiline: { minHeight: 120, lineHeight: 22 },
-  inputFocused: { borderColor: tint(colors.coral, 0.5) },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  inputMultiline: { minHeight: 120, paddingTop: space.sm + 2 },
+  unit: { marginLeft: space.xs },
+  accessory: { flexDirection: "row", justifyContent: "flex-end", backgroundColor: colors.surfaceSoft, borderTopWidth: 1, borderTopColor: colors.line },
+  accessoryBtn: { paddingHorizontal: space.md + 4, paddingVertical: space.sm },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: space.xs },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: space.xxs + 2,
+    minHeight: size.chip + 4,
     borderRadius: radius.pill,
-    paddingHorizontal: 16,
-    paddingVertical: 11,
+    paddingHorizontal: space.md,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.line,
   },
-  chipIdle: { backgroundColor: colors.surface },
-  chipText: { fontFamily: fonts.bodyHeavy, fontSize: 14, color: colors.ink },
-  colors: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  colors: { flexDirection: "row", flexWrap: "wrap", gap: space.sm },
   swatch: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: size.touch,
+    height: size.touch,
+    borderRadius: radius.pill,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 3,
-    borderColor: "transparent",
+    borderColor: colors.surface,
   },
-  pickerWrap: { marginTop: 10, backgroundColor: colors.surface, borderRadius: radius.md, padding: 6 },
-  done: { alignSelf: "flex-end", paddingHorizontal: 12, paddingVertical: 8 },
-  doneText: { fontFamily: fonts.bodyHeavy, fontSize: 15 },
+  swatchActive: { borderColor: colors.ink },
+  pickerWrap: { marginTop: space.sm, backgroundColor: colors.surface, borderRadius: radius.md, padding: space.xs },
+  done: { alignSelf: "flex-end", paddingHorizontal: space.sm, paddingVertical: space.xs, minHeight: size.touch, justifyContent: "center" },
 });
